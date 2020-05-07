@@ -24,10 +24,10 @@ class ChatDB {
     this.messages_collection = 'messages'
     this.conversations_collection = 'conversations'
     this.db.collection(this.messages_collection).createIndex(
-      { 'timelineOf':1, 'message_id': 1 }
+      { 'timelineOf':1, 'conversWith': 1 }
     );
     this.db.collection(this.conversations_collection).createIndex(
-      { 'timelineOf':1, 'conversWith': 1 }
+      { 'timelineOf':1, "app_id": 1, "timestamp": 1 }
     );
   }
 
@@ -67,12 +67,30 @@ class ChatDB {
   saveOrUpdateConversation(conversation, callback) {
     console.log("saving conversation...", conversation)
     this.db.collection(this.conversations_collection).updateOne({timelineOf: conversation.timelineOf, conversWith: conversation.conversWith}, { $set: conversation}, { upsert: true }, function(err, doc) {
-      if (callback) {
-        callback(err, null)
+      if (err) {
+        if (callback) {
+          callback(err, null)
+        }
       }
       else {
         if (callback) {
           callback(null, doc)
+        }
+      }
+    });
+  }
+
+  lastConversations(appid, userid, callback) {
+    console.log("DB. app:", appid, "user:", userid)
+    this.db.collection(this.conversations_collection).find( { timelineOf: userid, app_id: appid } ).limit(200).sort( { timestamp: -1 } ).toArray(function(err, docs) {
+      if (err) {
+        if (callback) {
+          callback(err, null)
+        }
+      }
+      else {
+        if (callback) {
+          callback(null, docs)
         }
       }
     });
