@@ -17,6 +17,13 @@ app.use(cors({origin: 'http://localhost:8100'}));
 app.get("verify", (req, res) => {
     const token = req.headers["X-Auth"]
     console.log("token:", token)
+    var decoded =""
+    try {
+        decoded = jwt.verify(token, jwtKey);
+    } catch(err) {
+        console.log("err", err)
+    }
+    res.status(200).send(decoded)
 })
 
 var port = process.env.PORT || 8004s;
