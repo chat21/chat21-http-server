@@ -14,8 +14,9 @@ app.use(bodyParser.json())
 app.use(cors({origin: 'http://localhost:8100'}));
 // app.use(express.static('public'))
 
-app.get("verify", (req, res) => {
-    const token = req.headers["X-Auth"]
+app.get("/verify", (req, res) => {
+    console.log(req.headers)
+    const token = req.headers["authorization"]
     console.log("token:", token)
     var decoded =""
     try {
@@ -26,8 +27,8 @@ app.get("verify", (req, res) => {
     res.status(200).send(decoded)
 })
 
-var port = process.env.PORT || 8004s;
+var port = process.env.PORT || 8004;
 console.log("Starting server on port", port)
 app.listen(port, () => {
-    console.log('Server started:\n\n', getToken('observer'))
+    console.log('Server started.')
 });

@@ -1,9 +1,7 @@
 /* 
-    ver 0.1
+    ver 0.1.1
     Andrea Sponziello - (c) Tiledesk.com
 */
-
-var Message = require("../models/message");
 
 /**
  * This is the class that manages DB persistence
