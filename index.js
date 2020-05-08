@@ -12,7 +12,7 @@ const jwtKey = process.env.JWT_KEY
 const app = express()
 app.use(bodyParser.json())
 // use it before all route definitions
-app.use(cors({origin: 'http://localhost:8100'}));
+// app.use(cors({origin: 'http://localhost:8100'}));
 app.use(cors({origin: 'http://tdchatserver.herokuapp.com/'}));
 // app.use(express.static('public'))
 
