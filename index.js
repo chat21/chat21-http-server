@@ -27,10 +27,9 @@ app.get("/:appid/:userid/conversations", (req, res) => {
     const jwt = decodejwt(req)
     console.log("app:", appid, "user:", userid, "token:", jwt)
     if (jwt.sub !== userid && jwt.app_id !== appid) {
-        return res.status(401).end()
+        res.status(401).end()
         return
     }
-    console.log("app:", appid, "user:", userid)
     chatdb.lastConversations(appid, userid, function(err, docs) {
       if (err) {
         const reply = {
@@ -43,6 +42,36 @@ app.get("/:appid/:userid/conversations", (req, res) => {
         const reply = {
           success: true,
           result: docs
+        }
+        console.log("REPLY:", reply)
+        res.status(200).json(reply)
+      }
+    })
+})
+
+app.get("/:appid/:userid/conversations/:convid/messages", (req, res) => {
+    console.log("getting /:appid/:userid/messages")
+    const appid = req.params.appid
+    const userid = req.params.userid
+    const convid = req.params.convid
+    const jwt = decodejwt(req)
+    console.log("app:", appid, "user:", userid, "convid:", convid, "token:", jwt)
+    if (jwt.sub !== userid && jwt.app_id !== appid) {
+        res.status(401).end()
+        return
+    }
+    chatdb.lastMessages(appid, userid, convid, function(err, messages) {
+      if (err) {
+        const reply = {
+            success: false,
+            err: err.message()
+        }
+        res.status(200).send(reply)
+      }
+      else {
+        const reply = {
+          success: true,
+          result: messages
         }
         console.log("REPLY:", reply)
         res.status(200).json(reply)

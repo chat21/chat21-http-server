@@ -1,5 +1,5 @@
 /* 
-    ver 0.1.1
+    ver 0.1.2
     Andrea Sponziello - (c) Tiledesk.com
 */
 
@@ -83,6 +83,22 @@ class ChatDB {
   lastConversations(appid, userid, callback) {
     console.log("DB. app:", appid, "user:", userid)
     this.db.collection(this.conversations_collection).find( { timelineOf: userid, app_id: appid } ).limit(200).sort( { timestamp: -1 } ).toArray(function(err, docs) {
+      if (err) {
+        if (callback) {
+          callback(err, null)
+        }
+      }
+      else {
+        if (callback) {
+          callback(null, docs)
+        }
+      }
+    });
+  }
+
+  lastMessages(appid, userid, convid, callback) {
+    console.log("DB. app:", appid, "user:", userid, "convid", convid)
+    this.db.collection(this.messages_collection).find( { timelineOf: userid, app_id: appid, conversWith: convid } ).limit(200).sort( { timestamp: -1 } ).toArray(function(err, docs) {
       if (err) {
         if (callback) {
           callback(err, null)
