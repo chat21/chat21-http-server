@@ -21,8 +21,15 @@ app.get("/verify", (req, res) => {
 })
 
 app.get("/:appid/:userid/conversations", (req, res) => {
+    console.log("getting /:appid/:userid/conversations")
     const appid = req.params.appid
     const userid = req.params.userid
+    const jwt = decodejwt(req)
+    console.log("app:", appid, "user:", userid, "token:", jwt)
+    if (jwt.sub !== userid && jwt.app_id !== appid) {
+        return res.status(401).end()
+        return
+    }
     console.log("app:", appid, "user:", userid)
     chatdb.lastConversations(appid, userid, function(err, docs) {
       if (err) {
@@ -37,7 +44,8 @@ app.get("/:appid/:userid/conversations", (req, res) => {
           success: true,
           result: docs
         }
-        res.status(200).send(reply)
+        console.log("REPLY:", reply)
+        res.status(200).json(reply)
       }
     })
 })
