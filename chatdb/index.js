@@ -27,7 +27,7 @@ class ChatDB {
       { 'timelineOf':1, 'conversWith': 1 }
     );
     this.db.collection(this.conversations_collection).createIndex(
-      { 'timelineOf':1, "app_id": 1, "timestamp": 1 }
+      { 'timelineOf':1, "app_id": 1, "timestamp": 1, "archived": 1 }
     );
   }
 
@@ -80,9 +80,9 @@ class ChatDB {
     });
   }
 
-  lastConversations(appid, userid, callback) {
-    console.log("DB. app:", appid, "user:", userid)
-    this.db.collection(this.conversations_collection).find( { timelineOf: userid, app_id: appid } ).limit(200).sort( { timestamp: -1 } ).toArray(function(err, docs) {
+  lastConversations(appid, userid, archived, callback) {
+    console.log("DB. app:", appid, "user:", userid, "archived:", archived)
+    this.db.collection(this.conversations_collection).find( { timelineOf: userid, app_id: appid, archived: archived } ).limit(200).sort( { timestamp: -1 } ).toArray(function(err, docs) {
       if (err) {
         if (callback) {
           callback(err, null)
