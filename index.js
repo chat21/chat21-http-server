@@ -30,11 +30,13 @@ app.use(function (req, res, next) {
 app.use(function (req, res, next) {
   const jwt = decodejwt(req)
   if (jwt) {
-    req.user = {
-      userId: jwt.sub,
+    // adds "user" to req
+    req['user'] = {
+      uid: jwt.sub,
       appId: jwt.app_id
     }
-    req.jwt = jwt
+    // adds "jwt" to req
+    req['jwt'] = jwt
   }
   next();
 });
@@ -47,9 +49,12 @@ app.get("/verify", (req, res) => {
 app.get("/:appid/:userid/conversations", (req, res) => {
   console.log("getting /:appid/:userid/conversations")
   if (!authorize(req, res)) {
+    console.log("Unauthorized!")
     return
   }
+  console.log("Go with conversations!")
   conversations(req, false, function(err, docs) {
+    console.log("got conversations", docs, err)
     if (err) {
       const reply = {
           success: false,
@@ -70,8 +75,8 @@ app.get("/:appid/:userid/conversations", (req, res) => {
 function authorize(req, res) {
   const appid = req.params.appid
   const userid = req.params.userid
-  console.log("appId:", appid, "userId:", userid, "user:", req.user, "token:", req.jwt)
-  if (!req.user || req.user.userId !== userid || req.user.appId !== appid) {
+  console.log("appId:", appid, "userId:", userid, "user:", req.user) //, "token:", req.jwt)
+  if (!req.user || req.user.uid !== userid || req.user.appId !== appid) {
     res.status(401).end()
     return false
   }
@@ -79,7 +84,7 @@ function authorize(req, res) {
 }
 
 app.get("/:appid/:userid/archived_conversations", (req, res) => {
-  console.log("getting /:appid/:userid/archived_conversations")
+  console.log("GET /:appid/:userid/archived_conversations")
   if (!authorize(req, res)) {
     return
   }
@@ -146,29 +151,26 @@ app.get("/:appid/:userid/conversations/:convid/messages", (req, res) => {
 
 app.post('/:app_id/groups', (req, res) => {
 
-  if (!authorize(req, res)) {
+  console.log("appId:", req.user.appId, "user:", req.user.uid)
+  if (!req.user || !req.user.appId) {
+    res.status(401).end()
     return
   }
-    
-  cors(req, res, () => {
-
+  // cors(req, res, () => {
     if (!req.body.group_name) {
-        res.status(405).send('group_name is not present!');
+        res.status(405).send('group_name not present!');
     }
     // if (!req.body.group_members) {
-    //     res.status(405).send('group_members is not present!');
-    // }
-    // if (!req.params.app_id) {
-    //     res.status(405).send('app_id is not present!');
+    //     res.status(405).send('group_members not present!');
     // }
 
     let group_name = req.body.group_name;
     let group_id = req.body.group_id;
-    let current_user = req.user.uid;
-
-    if (req.body.current_user) {
-      current_user = req.body.current_user;
+    if (!group_id) {
+      group_id = "group-" + uuidv4();
     }
+    let current_user = req.user.uid;
+    let group_attributes = req.body.attributes;
 
     let group_owner = current_user;
 
@@ -179,15 +181,47 @@ app.post('/:app_id/groups', (req, res) => {
 
     group_members[current_user] = 1;
 
-    let app_id = req.params.app_id;
-
+    let app_id = req.user.appId;
 
     console.log('group_name', group_name);
-    console.log('group_id', group_id);        
+    console.log('group_id', group_id);
     console.log('group_owner', group_owner);
     console.log('group_members', group_members);
     console.log('app_id', app_id);
 
+
+    // 1. create group json
+    // 2. save group json in mongodb
+    // 3. publish to /observer
+    // 4. observer publishes JSON to all members
+    // 5. observer (virtually) creates group_id timelineOf messages (that's created on the first message sent by one member)
+
+    var create_group_topic = `apps.observer.${app_id}.groups.create`
+    console.log("Publishing to topic:", create_group_topic);
+    var group = {};
+    group.name = group_name;
+    group.uid = group_id
+    group.owner = group_owner;
+    group.members = group_members;
+    group.createdOn = Date.now();
+    if (group_attributes) {
+        group.attributes = group_attributes;
+    }
+    console.log("creating group " + JSON.stringify(group) + " to "+ create_group_topic);
+    // admin.database().ref(path).set(group);
+
+    console.log(">>> NOW PUBLISHING... CREATE GROUP TOPIC", create_group_topic)
+    const group_payload = JSON.stringify(group)
+    publish(exchange, create_group_topic, Buffer.from(group_payload), function(err) {
+      console.log("PUBLISHED 'CREATE GROUP' ON TOPIC", create_group_topic)
+      if (err) {
+        res.status(500).send({"success":false, "err": err});
+      }
+      else {
+        res.status(201).send({"success":true});
+      }
+    });
+    
     // if (group_id) {
     //   // createGroupWithId(group_id, group_name, group_owner, group_members, app_id, attributes, invited_members) {
     //     chatApi.createGroupWithId(group_id, group_name, group_owner, group_members, app_id, req.body.attributes, req.body.invited_members).then(function(result) {
@@ -203,7 +237,7 @@ app.post('/:app_id/groups', (req, res) => {
     //     });
   
     // }               
-  });
+  // });
 });
 
 // ********************************************************
@@ -211,7 +245,7 @@ app.post('/:app_id/groups', (req, res) => {
 // ********************************************************
 
 function decodejwt(req) {
-    console.log(req.headers)
+    // console.log(req.headers)
     var token = null;
     if (req.headers["authorization"]) {
       token = req.headers["authorization"]
@@ -225,7 +259,7 @@ function decodejwt(req) {
     else {
       return null;
     }
-    console.log("token:", token)
+    // console.log("token:", token)
     var decoded = null
     try {
         decoded = jwt.verify(token, jwtKey);
