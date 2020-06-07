@@ -11,6 +11,7 @@ var amqpConn = null;
 var exchange = 'amq.topic';
 
 const jwtKey = process.env.JWT_KEY
+var chatdb = null
 
 const app = express()
 app.use(bodyParser.json())
@@ -33,7 +34,16 @@ app.use(function (req, res, next) {
     // adds "user" to req
     req['user'] = {
       uid: jwt.sub,
-      appId: jwt.app_id
+      appId: jwt.app_id,
+      roles: {
+        "user": true
+      }
+    }
+    if (jwt.tiledesk_api_roles) { // TODO get multiple roles splitting tiledesk_api_roles on ","
+      req['user'].roles[jwt.tiledesk_api_roles] = true
+    }
+    else {
+      req['user'].roles["user"] = true
     }
     // adds "jwt" to req
     req['jwt'] = jwt
@@ -74,9 +84,9 @@ app.get("/:appid/:userid/conversations", (req, res) => {
 
 function authorize(req, res) {
   const appid = req.params.appid
-  const userid = req.params.userid
-  console.log("appId:", appid, "userId:", userid, "user:", req.user) //, "token:", req.jwt)
-  if (!req.user || req.user.uid !== userid || req.user.appId !== appid) {
+  // const userid = req.params.userid
+  console.log("appId:", appid, "user:", req.user)
+  if (!req.user || (req.user.appId !== appid)) { // (req.user.uid !== userid) || 
     res.status(401).end()
     return false
   }
@@ -145,11 +155,12 @@ app.get("/:appid/:userid/conversations/:convid/messages", (req, res) => {
     })
 })
 
-// ****************************************************
-// **************** GROUPS MANAGEMENT *****************
-// ****************************************************
+// *****************************************
+// **************** GROUPS *****************
+// *****************************************
 
-app.post('/:app_id/groups', (req, res) => {
+/** Create a group */
+app.post('/:appid/groups', (req, res) => {
 
   console.log("appId:", req.user.appId, "user:", req.user.uid)
   if (!req.user || !req.user.appId) {
@@ -167,7 +178,7 @@ app.post('/:app_id/groups', (req, res) => {
     let group_name = req.body.group_name;
     let group_id = req.body.group_id;
     if (!group_id) {
-      group_id = "group-" + uuidv4();
+      group_id = newGroupId()
     }
     let current_user = req.user.uid;
     let group_attributes = req.body.attributes;
@@ -198,12 +209,14 @@ app.post('/:app_id/groups', (req, res) => {
 
     var create_group_topic = `apps.observer.${app_id}.groups.create`
     console.log("Publishing to topic:", create_group_topic);
+    const now = Date.now()
     var group = {};
     group.name = group_name;
     group.uid = group_id
     group.owner = group_owner;
     group.members = group_members;
-    group.createdOn = Date.now();
+    group.createdOn = now;
+    group.updatedOn = now;
     if (group_attributes) {
         group.attributes = group_attributes;
     }
@@ -221,24 +234,219 @@ app.post('/:app_id/groups', (req, res) => {
         res.status(201).send({"success":true});
       }
     });
-    
-    // if (group_id) {
-    //   // createGroupWithId(group_id, group_name, group_owner, group_members, app_id, attributes, invited_members) {
-    //     chatApi.createGroupWithId(group_id, group_name, group_owner, group_members, app_id, req.body.attributes, req.body.invited_members).then(function(result) {
-    //     console.log('result', result);
-    //     // prima veniva ritornato il result
-    //     res.status(201).send({"success":true});
-    //   });
-    // } else {
-    //   // createGroup(group_name, group_owner, group_members, app_id, attributes, invited_members) {
-    //     chatApi.createGroup(group_name, group_owner, group_members, app_id, req.body.attributes, req.body.invited_members).then(function(result) {
-    //       console.log('result', result);
-    //       res.status(201).send({"success":true});
-    //     });
-  
-    // }               
-  // });
 });
+
+function newGroupId() {
+  group_id = "group-" + uuidv4();
+  return group_id
+}
+
+/** Get group data */
+app.get('/:appid/groups/:group_id', (req, res) => {
+  console.log("getting /:appid/groups/group_id")
+  if (!authorize(req, res)) {
+    console.log("Unauthorized!")
+    return
+  }
+  const group_id = req.params.group_id
+  chatdb.getGroup(group_id, function(err, group) {
+    console.log("group found", group)
+    if (err) {
+      const reply = {
+          success: false,
+          err: err.message()
+      }
+      res.status(404).send(reply)
+    }
+    else if (group) {
+      console.log("group members", group.members)
+      im_member = group.members[req.user.uid]
+      im_admin = req.user.roles.admin
+      console.log("im_member:", im_member)
+      console.log("im_admin:", im_admin)
+      if (im_member || im_admin) {
+        const reply = {
+          success: true,
+          result: group
+        }
+        res.status(200).json(reply)
+      }
+      else {
+        const reply = {
+          success: false,
+          err: "You are not a member of this group"
+        }
+        res.status(401).send(reply)
+      }
+    }
+    else {
+      const reply = {
+        success: false,
+        err: "Group does not exist"
+      }
+      res.status(404).send(reply)
+    }
+  });
+});
+
+/** Join a group */
+app.post('/:appid/groups/:group_id/members', (req, res) => {
+  console.log('adds a member to a group', req.body, req.params);
+  if (!authorize(req, res)) {
+    console.log("Unauthorized")
+    res.status(401).send('Unauthorized');
+    return
+  }
+  if (!req.body.member_id) {
+      res.status(405).send('member_id is mandatory!');
+  }
+  const joined_member_id = req.body.member_id;
+  const group_id = req.params.group_id;
+  console.log('joined_member_id', joined_member_id);
+  console.log('group_id', group_id);
+  chatdb.getGroup(group_id, function(err, group) {
+    console.log("group found?", group, "err", err)
+    if (err || !group) {
+      const reply = {
+          success: false,
+          err: (err && err.message()) ? err.message() : "Not found"
+      }
+      res.status(404).send(reply)
+    }
+    else {
+      console.log("group members", group.members)
+      console.log("group owner", group.owner)
+      im_owner = (group.owner === req.user.uid)
+      im_admin = req.user.roles.admin
+      console.log("im_owner:",im_owner)
+      console.log("im_admin:",im_admin)
+      if (im_admin || im_owner) {
+        if (group.members[joined_member_id]) {
+          const reply = {
+            success: false,
+            err: "Already a member"
+          }
+          res.status(401).json(reply)
+          return
+        }
+        const now = Date.now()
+        group.members[joined_member_id] = 1
+        group.updatedOn = now;
+        chatdb.saveOrUpdateGroup(group, function(err) {
+          if (err) {
+            console.log("An error occurred:", err)
+            const reply = {
+                success: false,
+                err: err.message() ? err.message() : "Error saving group"
+            }
+            res.status(500).send(reply)
+          }
+          else {
+            console.log("saved group with new joined member")
+            // 1. send group update to group members
+            var update_group_topic = `apps.observer.${group.appId}.groups.update`
+            console.log("updating group " + JSON.stringify(group) + " to "+ update_group_topic);
+            const group_payload = JSON.stringify(group)
+            publish(exchange, update_group_topic, Buffer.from(group_payload), function(err) {
+              console.log("PUBLISHED 'UPDATE GROUP' ON TOPIC", update_group_topic)
+              if (err) {
+                res.status(500).send({"success":false, "err": err});
+              }
+              else {
+                res.status(200).send({"success":false});
+                // TODO: SEND MESSAGE "MEMBER ADDED TO GROUP"
+
+                // 2. pubblish all group messages to the joined member (in the member/group-conversWith timeline)
+                const appid = req.params.appid
+                const userid = group.uid
+                const convid = group.uid
+                chatdb.lastMessages(appid, userid, convid, function(err, messages) {
+                  if (err) {
+                    console.log("Error", err)
+                  }
+                  else {
+                    messages.array.forEach(message => {
+                      let inbox_of = joined_member_id
+                      let convers_with = group.uid
+                      const deliver_message_topic = `apps.observer.${app_id}.users.${inbox_of}.messages.${convers_with}.delivered`
+                      publish(exchange, deliver_message_topic, Buffer.from(message), function(err) {
+                        console.log("PUBLISH DELIVER MESSAGE TO TOPIC", deliver_message_topic)
+                        if (err) {
+                          console.log("error delivering message to joined member on topic", deliver_message_topic)
+                        }
+                      });
+                    });
+                  }
+                })                
+              }
+            });
+          }
+        })
+      }
+      else {
+        const reply = {
+          success: false,
+          err: "Not allowed"
+        }
+        res.status(401).send(reply)
+      }
+    }
+    // else {
+    //   const reply = {
+    //     success: false,
+    //     err: "Group does not exist"
+    //   }
+    //   res.status(404).send(reply)
+    // }
+  });
+
+  
+});
+
+// function joinGroup(member_id, group_id, app_id) {
+//   var path = '/apps/'+app_id+'/groups/'+group_id+'/members/';
+//   var member = {};
+//   member[member_id] = 1;
+//   console.log("member " + JSON.stringify(member) + " is joining group " + path);
+//   return admin.database().ref(path).update(member);
+// }
+
+// duplicateTimelineOnJoinGroup = functions.database.ref('/apps/{app_id}/groups/{group_id}/members/{member_id}').onCreate((data, context) => {
+//   const member_id = context.params.member_id;
+//   const group_id = context.params.group_id;
+//   const app_id = context.params.app_id;
+//   return chatApi.copyGroupMessagesToUserTimeline(group_id, member_id, app_id);
+// });
+
+// function copyGroupMessagesToUserTimeline(group_id, user_id, app_id) {
+//   const fromPath = '/apps/'+app_id+'/messages/' + group_id;
+//   return admin.database().ref(fromPath).orderByChild("timestamp").once('value').then(function(messagesSnap) {
+//     if (messagesSnap.val()!=null){
+//       var messagesWithMessageIdAsObject = messagesSnap.val();
+//       console.log('messagesWithMessageIdAsObject ' + JSON.stringify(messagesWithMessageIdAsObject) );
+//       var messagesIdasArray = Object.keys(messagesWithMessageIdAsObject);
+//       console.log('messagesIdasArray ' + JSON.stringify(messagesIdasArray) );
+//       // disable notification
+//       var i = 0;
+//       messagesIdasArray.forEach(function(messageId) {
+//         const message = messagesWithMessageIdAsObject[messageId];
+//         if (i>0) {
+//           if (message.attributes) {
+//               message.attributes.sendnotification = false;
+//           }
+//         }
+//         console.log('message ' + JSON.stringify(message));
+//         i++;
+//       });
+//       const toPath = '/apps/'+app_id+'/users/' + user_id+'/messages/'+group_id;
+//       console.log('duplicating message ' + JSON.stringify(messagesWithMessageIdAsObject) + " from : " + fromPath + " to " + toPath);
+//       return admin.database().ref(toPath).update(messagesWithMessageIdAsObject);
+//     } else {
+//       console.log("message is null. Nothing to duplicate");
+//       return 0;
+//     }
+//   });
+// }
 
 // ********************************************************
 // **************** END GROUPS MANAGEMENT *****************
@@ -300,7 +508,7 @@ mongodb.MongoClient.connect(mongouri, { useNewUrlParser: true, useUnifiedTopolog
 });
 
 
-// AMQP ADAPTER
+// AMQP COMMUNICATION
 
 function startMQ() {
   console.log("Connecting to RabbitMQ...")

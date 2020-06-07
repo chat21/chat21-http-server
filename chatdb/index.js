@@ -23,11 +23,15 @@ class ChatDB {
     this.db = options.database
     this.messages_collection = 'messages'
     this.conversations_collection = 'conversations'
+    this.groups_collection = 'groups'
     this.db.collection(this.messages_collection).createIndex(
       { 'timelineOf':1, 'conversWith': 1 }
     );
     this.db.collection(this.conversations_collection).createIndex(
       { 'timelineOf':1, "app_id": 1, "timestamp": 1, "archived": 1 }
+    );
+    this.db.collection(this.groups_collection).createIndex(
+      { 'uid':1 }
     );
   }
 
@@ -48,25 +52,38 @@ class ChatDB {
     });
   }
 
-  // saveMessage(message, callback) {
-  //   console.log("saving message...", message)
-  //   this.db.collection(this.messages_collection).insertOne(message, function(err, doc) {
-  //     if (err) {
-  //       if (callback) {
-  //         callback(err, null)
-  //       }
-  //     }
-  //     else {
-  //       if (callback) {
-  //         callback(null, doc)
-  //       }
-  //     }
-  //   });
-  // }
-
   saveOrUpdateConversation(conversation, callback) {
     console.log("saving conversation...", conversation)
     this.db.collection(this.conversations_collection).updateOne({timelineOf: conversation.timelineOf, conversWith: conversation.conversWith}, { $set: conversation}, { upsert: true }, function(err, doc) {
+      if (err) {
+        if (callback) {
+          callback(err, null)
+        }
+      }
+      else {
+        if (callback) {
+          callback(null, doc)
+        }
+      }
+    });
+  }
+
+  saveOrUpdateGroup(group, callback) {
+    console.log("saving group...", group)
+    this.db.collection(this.groups_collection).updateOne( { uid: group.uid }, { $set: group }, { upsert: true }, function(err, doc) {
+      if (callback) {
+        callback(err)
+      }
+      else {
+        if (callback) {
+          callback(null)
+        }
+      }
+    });
+  }
+
+  getGroup(group_id, callback) {
+    this.db.collection(this.groups_collection).findOne( { uid: group_id }, function(err, doc) {
       if (err) {
         if (callback) {
           callback(err, null)
@@ -111,24 +128,6 @@ class ChatDB {
       }
     });
   }
-
-  // updateMessage(message_fields, callback) {
-  //   console.log("saving message...", message)
-  //   this.db.collection(this.messages_collection).updateOne({message_id: message.message_id},
-  //     {$set: message_fields}, function(err, doc) {
-  //     if (err) {
-  //       console.log(err);
-  //       if (callback) {
-  //         callback(err, null)
-  //       }
-  //     }
-  //     console.log("updated message", doc);
-  //     if (callback) {
-  //       callback(null, doc)
-  //     }
-  //   });
-  // }
-  
 
 }
 
