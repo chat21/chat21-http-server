@@ -136,7 +136,7 @@ app.get("/:appid/:userid/conversations/:convid/messages", (req, res) => {
         res.status(401).end()
         return
     }
-    chatdb.lastMessages(appid, userid, convid, function(err, messages) {
+    chatdb.lastMessages(appid, userid, convid, -1, 200, function(err, messages) {
       if (err) {
         const reply = {
             success: false,
@@ -237,7 +237,7 @@ app.post('/:appid/groups', (req, res) => {
 });
 
 function newGroupId() {
-  group_id = "group-" + uuidv4();
+  group_id = "group-" + uuid();
   return group_id
 }
 
@@ -250,7 +250,6 @@ app.get('/:appid/groups/:group_id', (req, res) => {
   }
   const group_id = req.params.group_id
   chatdb.getGroup(group_id, function(err, group) {
-    console.log("group found", group)
     if (err) {
       const reply = {
           success: false,
@@ -259,11 +258,11 @@ app.get('/:appid/groups/:group_id', (req, res) => {
       res.status(404).send(reply)
     }
     else if (group) {
-      console.log("group members", group.members)
+      // console.log("group members", group.members)
       im_member = group.members[req.user.uid]
       im_admin = req.user.roles.admin
-      console.log("im_member:", im_member)
-      console.log("im_admin:", im_admin)
+      // console.log("im_member:", im_member)
+      // console.log("im_admin:", im_admin)
       if (im_member || im_admin) {
         const reply = {
           success: true,
@@ -274,7 +273,7 @@ app.get('/:appid/groups/:group_id', (req, res) => {
       else {
         const reply = {
           success: false,
-          err: "You are not a member of this group"
+          err: "Permission denied"
         }
         res.status(401).send(reply)
       }
@@ -282,7 +281,7 @@ app.get('/:appid/groups/:group_id', (req, res) => {
     else {
       const reply = {
         success: false,
-        err: "Group does not exist"
+        err: "Group doesn't exist"
       }
       res.status(404).send(reply)
     }
@@ -300,6 +299,7 @@ app.post('/:appid/groups/:group_id/members', (req, res) => {
   if (!req.body.member_id) {
       res.status(405).send('member_id is mandatory!');
   }
+  const appid = req.params.appid
   const joined_member_id = req.body.member_id;
   const group_id = req.params.group_id;
   console.log('joined_member_id', joined_member_id);
@@ -342,7 +342,7 @@ app.post('/:appid/groups/:group_id/members', (req, res) => {
             res.status(500).send(reply)
           }
           else {
-            console.log("saved group with new joined member")
+            console.log("saved group with new joined member ok.")
             // 1. send group update to group members
             var update_group_topic = `apps.observer.${group.appId}.groups.update`
             console.log("updating group " + JSON.stringify(group) + " to "+ update_group_topic);
@@ -355,29 +355,73 @@ app.post('/:appid/groups/:group_id/members', (req, res) => {
               else {
                 res.status(200).send({"success":false});
                 // TODO: SEND MESSAGE "MEMBER ADDED TO GROUP"
+                console.log("group.members:", group.members)
+                for (let [member_id, value] of Object.entries(group.members)) {
+                  console.log("to member:", member_id)
+                  const now = Date.now()
+                  const message = {
+                    message_id: uuid(),
+                    type: "text",
+                    text: joined_member_id + " added to group",
+                    timestamp: now,
+                    channel_type: "group",
+                    sender_fullname: "System",
+                    sender: group.owner,
+                    recipient_fullname: group.name,
+                    recipient: group.uid,
+                    status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
+                    attributes: {
+                      subtype:"info",
+                      updateconversation : true,
+                      messagelabel: {
+                        key: "MEMBER_JOINED_GROUP",
+                        parameters: {
+                          member_id: joined_member_id
+                          // fullname: fullname // OPTIONAL
+                        }
+                      }
+                    }
+                  }
+                  console.log("Member joined group message:", message)
+                  let inbox_of = member_id
+                  let convers_with = group.uid
+                  const deliver_message_topic = `apps.observer.${appid}.users.${inbox_of}.messages.${convers_with}.delivered`
+                  const message_payload = JSON.stringify(message)
+                  publish(exchange, deliver_message_topic, Buffer.from(message_payload), function(err) {
+                    console.log("PUBLISH: DELIVER MESSAGE TO TOPIC:", deliver_message_topic)
+                    if (err) {
+                      console.log("error delivering message to joined member on topic", deliver_message_topic)
+                    }
+                  });
+                }
 
-                // 2. pubblish all group messages to the joined member (in the member/group-conversWith timeline)
-                const appid = req.params.appid
+                // 2. pubblish old group messages to the joined member (in the member/group-conversWith timeline)
                 const userid = group.uid
                 const convid = group.uid
-                chatdb.lastMessages(appid, userid, convid, function(err, messages) {
+                chatdb.lastMessages(appid, userid, convid, 1, 200, function(err, messages) {
                   if (err) {
                     console.log("Error", err)
                   }
+                  else if (!messages) {
+                    console.log("No messages in group", group.uid)
+                  }
                   else {
-                    messages.array.forEach(message => {
+                    console.log("delivering old group messages to:", joined_member_id)
+                    messages.forEach(message => {
+                      console.log("Message:", message.text)
                       let inbox_of = joined_member_id
                       let convers_with = group.uid
-                      const deliver_message_topic = `apps.observer.${app_id}.users.${inbox_of}.messages.${convers_with}.delivered`
-                      publish(exchange, deliver_message_topic, Buffer.from(message), function(err) {
-                        console.log("PUBLISH DELIVER MESSAGE TO TOPIC", deliver_message_topic)
+                      const deliver_message_topic = `apps.observer.${appid}.users.${inbox_of}.messages.${convers_with}.delivered`
+                      const message_payload = JSON.stringify(message)
+                      publish(exchange, deliver_message_topic, Buffer.from(message_payload), function(err) {
+                        console.log("PUBLISH: DELIVER MESSAGE TO TOPIC:", deliver_message_topic)
                         if (err) {
                           console.log("error delivering message to joined member on topic", deliver_message_topic)
                         }
                       });
                     });
                   }
-                })                
+                })
               }
             });
           }
