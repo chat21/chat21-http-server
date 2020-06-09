@@ -155,6 +155,199 @@ app.get("/:appid/:userid/conversations/:convid/messages", (req, res) => {
     })
 })
 
+/**
+ * Send a message.
+ *
+ * This endpoint supports CORS.
+ */
+app.post('/:app_id/messages', (req, res) => {
+  console.log('/:app_id/messages');
+  let sender_id = req.user.uid;
+  if (!req.body.sender_fullname) {
+      res.status(405).send('Sender Fullname is mandatory');
+      return
+  }
+  if (!req.body.recipient_id) {
+      res.status(405).send('Recipient id is mandatory');
+      return
+  }
+  if (!req.body.recipient_fullname) {
+      res.status(405).send('Recipient Fullname is mandatory');
+      return
+  }
+  if (!req.body.text) {
+      res.status(405).send('text is mandatory');
+      return
+  }
+  im_admin = req.user.roles.admin // admin can force sender_id to someone different from current user
+  if (im_admin && req.body.sender_id) {
+    sender_id = req.body.sender_id;
+  }
+  let sender_fullname = req.body.sender_fullname;
+  let recipient_id = req.body.recipient_id;
+  let recipient_fullname = req.body.recipient_fullname;
+  let text = req.body.text;
+  let appid = req.params.app_id;
+  let channel_type = req.body.channel_type;
+  let attributes = req.body.attributes;
+  let type = req.body.type;
+  let metadata = req.body.metadata;
+  let timestamp = req.body.timestamp;
+  console.log('sender_id', sender_id);
+  console.log('sender_fullname', sender_fullname);
+  console.log('recipient_id', recipient_id);
+  console.log('recipient_fullname', recipient_fullname);
+  console.log('text', text);
+  console.log('app_id', appid);
+  console.log('channel_type', channel_type);
+  console.log('attributes', attributes);
+  console.log('type', type);
+  console.log('metadata', metadata);
+  console.log('timestamp', timestamp);
+  sendMessage(
+    appid, // mandatory
+    type, // optional | text
+    text, // mandatory
+    timestamp, // optional | null (=>now)
+    channel_type, // optional | direct
+    sender_id, // mandatory
+    sender_fullname, // mandatory
+    recipient_id, // mandatory
+    recipient_fullname, // mandatory
+    attributes, // optional | null
+    metadata, // optional | null
+    function(err) { // optional | null
+      console.log("message sent with err", err)
+      if (err) {
+        const reply = {
+          success: false,
+          err: (err && err.message()) ? err.message() : "Not found"
+        }
+        res.status(404).send(reply)
+      }
+      else {
+        res.status(200).send({success: true})
+      }
+    }
+  )
+  // if (channel_type==null || channel_type=="direct") {  //is a direct message
+  //   // sendDirectMessage(sender_id, sender_fullname, recipient_id, recipient_fullname, text, app_id, attributes, timestamp, type, metadata) {
+  //   chatApi.sendDirectMessage(sender_id, sender_fullname, recipient_id, recipient_fullname, text, app_id, attributes, timestamp, type, metadata).then(function(result) {
+  //     console.log('result', result);
+  //     res.status(201).send(result);
+  //   });
+  // }else if (channel_type=="group") {
+  //   // sendGroupMessage(sender_id, sender_fullname, recipient_group_id, recipient_group_fullname, text, app_id, attributes, projectid, timestamp, type, metadata) {
+  //   chatApi.sendGroupMessage(sender_id, sender_fullname, recipient_id, recipient_fullname, text, app_id, attributes, undefined, timestamp, type, metadata).then(function(result) {
+  //     console.log('result', result);
+
+  //     res.status(201).send(result);
+  //   });
+  // }else {
+  //   res.status(405).send('channel_type error!');
+  // }
+
+});
+
+function sendMessage(
+    appid, // mandatory
+    type, // optional | text
+    text, // mandatory
+    timestamp, // optional | null
+    channel_type, // optional | direct
+    sender, // mandatory
+    sender_fullname, // mandatory
+    recipient, // mandatory
+    recipient_fullname, // mandatory
+    attributes, // optional | null
+    metadata, // optional | null
+    callback // optional | null
+  ) {
+  const outgoing_message = {
+    text: text,
+    type: type,
+    recipient_fullname: recipient_fullname,
+    sender_fullname: sender_fullname,
+    channel_type: channel_type? channel_type : "direct",
+  }
+  if (attributes) {
+    outgoing_message.attributes = attributes
+  }
+  if (metadata) {
+    outgoing_message.metadata = metadata
+  }
+  if (timestamp) {
+    outgoing_message.timestamp = timestamp
+  }
+  console.log("outgoing_message:", outgoing_message)
+  let dest_topic = `apps.${appid}.users.${sender}.messages.${recipient}.outgoing`
+  const message_payload = JSON.stringify(outgoing_message)
+  publish(exchange, dest_topic, Buffer.from(message_payload), function(err) {
+    console.log("PUBLISHED: SENDING MESSAGE TO TOPIC:", dest_topic)
+    if (err) {
+      console.log("error sending message", err, "On topic", dest_topic)
+      if (callback) {
+        callback(err)
+        return
+      }
+    }
+    callback(null)
+  });
+}
+
+function deliverMessage(
+    appid, // mandatory
+    inbox_of, // mandatory
+    convers_with, // mandatory
+    type, // optional | text
+    text, // mandatory
+    timestamp, // optional | now()
+    channel_type, // optional | direct
+    sender, // mandatory
+    sender_fullname, // mandatory
+    recipient, // mandatory
+    recipient_fullname, // mandatory
+    attributes, // optional | null
+    metadata, // optional | null
+    callback // optional | null
+  ) {
+  const now = Date.now()
+  const message = {
+    message_id: uuid(),
+    type: type,
+    text: text,
+    timestamp: timestamp? timestamp : now,
+    channel_type: channel_type? channel_type : "direct",
+    sender: sender,
+    sender_fullname: sender_fullname,
+    recipient: recipient,
+    recipient_fullname: recipient_fullname,
+    status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
+  }
+  if (attributes) {
+    message.attributes = attributes
+  }
+  if (metadata) {
+    message.metadata = metadata
+  }
+  console.log("Member joined group message:", message)
+  // let inbox_of = member_id
+  // let convers_with = group.uid
+  const deliver_message_topic = `apps.observer.${appid}.users.${inbox_of}.messages.${convers_with}.delivered`
+  const message_payload = JSON.stringify(message)
+  publish(exchange, deliver_message_topic, Buffer.from(message_payload), function(err) {
+    console.log("PUBLISH: DELIVER MESSAGE TO TOPIC:", deliver_message_topic)
+    if (err) {
+      console.log("error delivering message to joined member on topic", deliver_message_topic)
+      if (callback) {
+        callback(err)
+        return
+      }
+    }
+    callback(null)
+  });
+}
+ 
 // *****************************************
 // **************** GROUPS *****************
 // *****************************************
@@ -366,7 +559,7 @@ app.post('/:appid/groups/:group_id/members', (req, res) => {
                     timestamp: now,
                     channel_type: "group",
                     sender_fullname: "System",
-                    sender: group.owner,
+                    sender: "system",
                     recipient_fullname: group.name,
                     recipient: group.uid,
                     status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
