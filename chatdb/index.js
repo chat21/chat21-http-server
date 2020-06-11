@@ -97,6 +97,34 @@ class ChatDB {
     });
   }
 
+  joinGroup(group_id, member_id, callback) {
+    console.log("joining group...", group_id, member_id)
+    const member_field = "members." + member_id
+    const now = Date.now()
+    const set_command = {
+      $set: {
+        // member_field: 1, // see after
+        "updatedOn": now
+      }
+    }
+    set_command['$set'][member_field] = 1
+    this.db.collection(this.groups_collection).updateOne( { uid: group_id }, set_command, { upsert: true }, function(err, doc) {
+      if (callback) {
+        callback(err)
+      }
+      else {
+        if (callback) {
+          callback(null)
+        }
+      }
+    });
+  }
+
+//   db.products.update(
+//     { _id: 100 },
+//     { $set: { "details.make": "zzz" } }
+//  )
+
   lastConversations(appid, userid, archived, callback) {
     console.log("DB. app:", appid, "user:", userid, "archived:", archived)
     this.db.collection(this.conversations_collection).find( { timelineOf: userid, app_id: appid, archived: archived } ).limit(200).sort( { timestamp: -1 } ).toArray(function(err, docs) {
