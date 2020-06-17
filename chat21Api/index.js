@@ -197,7 +197,7 @@ class Chat21Api {
             console.log("Member joined group message:", message)
             let inbox_of = member_id
             let convers_with = group.uid
-            this.deliverMessage(appid, message, inbox_of, convers_with, function(err) {
+            this.deliverMessage(appid, message, inbox_of, convers_with, (err) => {
                 if (err) {
                     console.log("error delivering message to joined member", inbox_of)
                     callback(err)
@@ -211,7 +211,7 @@ class Chat21Api {
         // 2. pubblish old group messages to the joined member (in the member/group-conversWith timeline)
         const userid = group.uid
         const convid = group.uid
-        this.chatdb.lastMessages(appid, userid, convid, 1, 200, function(err, messages) {
+        this.chatdb.lastMessages(appid, userid, convid, 1, 200, (err, messages) => {
         if (err) {
             console.log("Error", err)
             callback(err)
@@ -225,16 +225,16 @@ class Chat21Api {
             const inbox_of = joined_member_id
             const convers_with = group.uid
             messages.forEach(message => {
-            // TODO: CHECK IN MESSAGE WAS ALREADY DELIVERED. (CLIENT? SERVER?)
-            console.log("Message:", message.text)
-            this.deliverMessage(appid, message, inbox_of, convers_with, function(err) {
-                if (err) {
-                console.log("error delivering message to joined member", inbox_of)
-                }
-                else {
-                console.log("DELIVERED MESSAGE TO", inbox_of, "CONVERS_WITH", convers_with)
-                }
-            })
+                // TODO: CHECK IN MESSAGE WAS ALREADY DELIVERED. (CLIENT? SERVER?)
+                console.log("Message:", message.text)
+                this.deliverMessage(appid, message, inbox_of, convers_with, (err) => {
+                    if (err) {
+                        console.log("error delivering message to joined member", inbox_of)
+                    }
+                    else {
+                        console.log("DELIVERED MESSAGE TO", inbox_of, "CONVERS_WITH", convers_with)
+                    }
+                })
             });
             callback(null)
         }
