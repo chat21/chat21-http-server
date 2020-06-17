@@ -797,6 +797,9 @@ function decodejwt(req) {
     else if (req.query['JWT']) {
       token = req.query['JWT']
     }
+    else if (req.query['token']) {
+      token = req.query['token']
+    }
     else {
       return null;
     }
