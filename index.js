@@ -788,11 +788,10 @@ app.put(baseurl + '/:app_id/groups/:group_id/attributes', (req, res) => {
 function decodejwt(req) {
     // console.log(req.headers)
     var token = null;
-    // if (req.headers["authorization"]) {
-    //   token = req.headers["authorization"]
-    // }
-    // else
-    if (req.query['jwt']) {
+    if (req.headers["authorization"]) {
+      token = req.headers["authorization"]
+    }
+    else if (req.query['jwt']) {
       token = req.query['jwt']
     }
     else if (req.query['JWT']) {
