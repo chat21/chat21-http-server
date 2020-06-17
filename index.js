@@ -337,6 +337,7 @@ app.post('/:appid/groups', (req, res) => {
   // cors(req, res, () => {
     if (!req.body.group_name) {
         res.status(405).send('group_name not present!');
+        return
     }
     // if (!req.body.group_members) {
     //     res.status(405).send('group_members not present!');
@@ -351,6 +352,10 @@ app.post('/:appid/groups', (req, res) => {
     let group_attributes = req.body.attributes;
 
     let group_owner = current_user;
+    im_admin = req.user.roles.admin;
+    if (im_admin && req.body.group_owner) {
+      group_owner = req.body.group_owner;
+    }
 
     let group_members = {};
     if (req.body.group_members) {
@@ -384,7 +389,7 @@ app.post('/:appid/groups', (req, res) => {
         res.status(500).send({"success":false, "err": err});
       }
       else {
-          res.status(201).send({"success":true});
+        res.status(201).send({"success":true});
       }
     })
 });
@@ -668,7 +673,6 @@ app.put('/:app_id/groups/:group_id/members', (req, res) => {
     res.status(405).send('members is mandatory');
     return
   }
-  // 0. get group by id
   let new_members = {};
   req.body.members.forEach(m => {
     new_members[m] = 1
@@ -686,27 +690,95 @@ app.put('/:app_id/groups/:group_id/members', (req, res) => {
   })
 });
 
-// function notifyGroupUpdate(exchange, group, users_to_be_notified, callback) {
-//   var update_group_topic = `apps.observer.${group.appId}.groups.update`
-//   console.log("updating group " + JSON.stringify(group) + " to "+ update_group_topic);
-//   const data = {
-//     group: group,
-//     notify_to: users_to_be_notified //{...new_members, ...old_members }
-//   }
-//   console.log("payload:", data)
-//   const group_payload = JSON.stringify(data)
-//   publish(exchange, update_group_topic, Buffer.from(group_payload), function(err) {
-//     console.log("PUBLISHED 'UPDATE GROUP' ON TOPIC", update_group_topic)
-//     callback(err)
-//   })
-// }
+/** Leave a group */
+app.delete('/:app_id/groups/:group_id/members/:member_id', (req, res) => {
+  // app.delete('/groups/:group_id/members/:member_id', (req, res) => {
+  console.log('leave group');
+  if (!req.params.member_id) {
+      res.status(405).send('member_id is mandatory');
+      return
+  }
+  else if (!req.params.group_id) {
+      res.status(405).send('group_id is mandatory');
+      return
+  }
+  else if (!req.params.app_id) {
+      res.status(405).send('app_id is mandatory');
+      return
+  }
+  let member_id = req.params.member_id;
+  let group_id = req.params.group_id;
+  let app_id = req.params.app_id;
+  const user = req.user
+  console.log('member_id', member_id);
+  console.log('group_id', group_id);
+  console.log('app_id', app_id);
+  console.log('user', user);
+  chatapi.leaveGroup(user, member_id, group_id, app_id, function(err) {
+    if (err) {
+      res.status(405).send(err)
+    }
+    else {
+      res.status(200).send({success: true})
+    }
+  });
+});
 
-// setMembersGroup(members, group_id, app_id) {
-//   var path = '/apps/'+app_id+'/groups/'+group_id+'/members/';
-//   // DEBUG console.log("path", path);
-//   console.log("setting members " + JSON.stringify(members) + " for group " + path);
-//   return admin.database().ref(path).set(members);
-// }
+/** Update group (just group name) */
+app.put('/:app_id/groups/:group_id', (req, res) => {
+  console.log('set members group');
+  if (!req.params.group_id) {
+      res.status(405).send('group_id is mandatory');
+      return
+  }
+  else if (!req.params.app_id) {
+      res.status(405).send('app_id is mandatory');
+      return
+  }
+  else if (!req.body.group_name) {
+    res.status(405).send('group_name is mandatory');
+    return
+  }
+  const group_name = req.body.group_name;
+  const group_id = req.params.group_id
+  const user = req.user
+  chatapi.updateGroupData(user, group_name, group_id, function(err) {
+    if (err) {
+      res.status(405).send(err)
+    }
+    else {
+      res.status(200).send({success: true})
+    }
+  })
+});
+
+/** Update group custom attributes */
+app.put('/:app_id/groups/:group_id/attributes', (req, res) => {
+  console.log('set members group');
+  if (!req.params.group_id) {
+      res.status(405).send('group_id is mandatory');
+      return
+  }
+  else if (!req.params.app_id) {
+      res.status(405).send('app_id is mandatory');
+      return
+  }
+  else if (!req.body.attributes) {
+    res.status(405).send('attributes is mandatory');
+    return
+  }
+  const attributes = req.body.attributes;
+  const group_id = req.params.group_id
+  const user = req.user
+  chatapi.updateGroupAttributes(user, attributes, group_id, function(err) {
+    if (err) {
+      res.status(405).send(err)
+    }
+    else {
+      res.status(200).send({success: true})
+    }
+  })
+});
 
 // ********************************************************
 // **************** END GROUPS MANAGEMENT *****************
