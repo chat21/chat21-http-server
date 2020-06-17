@@ -661,7 +661,7 @@ app.post(baseurl + '/:appid/groups/:group_id/members', (req, res) => {
 
 /** Set members of a group */
 app.put(baseurl + '/:app_id/groups/:group_id/members', (req, res) => {
-  console.log('set members group');
+  console.log('set members group', req.body);
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
