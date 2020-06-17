@@ -674,10 +674,10 @@ app.put(baseurl + '/:app_id/groups/:group_id/members', (req, res) => {
     res.status(405).send('members is mandatory');
     return
   }
-  let new_members = {};
-  req.body.members.forEach(m => {
-    new_members[m] = 1
-  })
+  let new_members = req.body.members //{};
+  // req.body.members.forEach(m => {
+  //   new_members[m] = 1
+  // })
   console.log("new_members:", new_members)
   const group_id = req.params.group_id
   const user = req.user
