@@ -806,6 +806,7 @@ function decodejwt(req) {
     // console.log("token:", token)
     var decoded = null
     try {
+        console.log("JWTKEY:", jwtKey)
         decoded = jwt.verify(token, jwtKey);
     } catch(err) {
         console.log("err", err)
