@@ -12,7 +12,7 @@ const { Chat21Api } = require('./chat21Api/index.js');
 // var exchange = 'amq.topic';
 
 const jwtKey = process.env.JWT_KEY
-const baseurl = '/api'
+const BASEURL = '/api'
 let chatdb = null
 let chatapi = null
 
@@ -59,7 +59,7 @@ app.get("/verify", (req, res) => {
     res.status(200).send(decoded)
 })
 
-app.get(baseurl + "/:appid/:userid/conversations", (req, res) => {
+app.get(BASEURL + "/:appid/:userid/conversations", (req, res) => {
   console.log("getting /:appid/:userid/conversations")
   if (!authorize(req, res)) {
     console.log("Unauthorized!")
@@ -96,7 +96,7 @@ function authorize(req, res) {
   return true
 }
 
-app.get(baseurl + "/:appid/:userid/archived_conversations", (req, res) => {
+app.get(BASEURL + "/:appid/:userid/archived_conversations", (req, res) => {
   console.log("GET /:appid/:userid/archived_conversations")
   if (!authorize(req, res)) {
     return
@@ -128,7 +128,7 @@ function conversations(req, archived, callback) {
   });
 }
 
-app.get(baseurl + "/:appid/:userid/conversations/:convid/messages", (req, res) => {
+app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) => {
     console.log("getting /:appid/:userid/messages")
     const appid = req.params.appid
     const userid = req.params.userid
@@ -163,25 +163,25 @@ app.get(baseurl + "/:appid/:userid/conversations/:convid/messages", (req, res) =
  *
  * This endpoint supports CORS.
  */
-app.post(baseurl + '/:app_id/messages', (req, res) => {
+app.post(BASEURL + '/:app_id/messages', (req, res) => {
   console.log('/:app_id/messages');
-  let sender_id = req.user.uid;
   if (!req.body.sender_fullname) {
       res.status(405).send('Sender Fullname is mandatory');
       return
   }
-  if (!req.body.recipient_id) {
+  else if (!req.body.recipient_id) {
       res.status(405).send('Recipient id is mandatory');
       return
   }
-  if (!req.body.recipient_fullname) {
+  else if (!req.body.recipient_fullname) {
       res.status(405).send('Recipient Fullname is mandatory');
       return
   }
-  if (!req.body.text) {
+  else if (!req.body.text) {
       res.status(405).send('text is mandatory');
       return
   }
+  let sender_id = req.user.uid;
   im_admin = req.user.roles.admin // admin can force sender_id to someone different from current user
   if (im_admin && req.body.sender_id) {
     sender_id = req.body.sender_id;
@@ -328,7 +328,7 @@ app.post(baseurl + '/:app_id/messages', (req, res) => {
 // *****************************************
 
 /** Create a group */
-app.post(baseurl + '/:appid/groups', (req, res) => {
+app.post(BASEURL + '/:appid/groups', (req, res) => {
 
   console.log("appId:", req.user.appId, "user:", req.user.uid)
   if (!req.user || !req.user.appId) {
@@ -401,7 +401,7 @@ function newGroupId() {
 }
 
 /** Get group data */
-app.get(baseurl + '/:appid/groups/:group_id', (req, res) => {
+app.get(BASEURL + '/:appid/groups/:group_id', (req, res) => {
   console.log("getting /:appid/groups/group_id")
   if (!authorize(req, res)) {
     console.log("Unauthorized!")
@@ -448,7 +448,7 @@ app.get(baseurl + '/:appid/groups/:group_id', (req, res) => {
 });
 
 /** Join a group */
-app.post(baseurl + '/:appid/groups/:group_id/members', (req, res) => {
+app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
   console.log('adds a member to a group', req.body, req.params);
   if (!authorize(req, res)) {
     console.log("Unauthorized")
@@ -660,7 +660,7 @@ app.post(baseurl + '/:appid/groups/:group_id/members', (req, res) => {
 // }
 
 /** Set members of a group */
-app.put(baseurl + '/:app_id/groups/:group_id/members', (req, res) => {
+app.put(BASEURL + '/:app_id/groups/:group_id/members', (req, res) => {
   console.log('set members group', req.body);
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
@@ -692,7 +692,7 @@ app.put(baseurl + '/:app_id/groups/:group_id/members', (req, res) => {
 });
 
 /** Leave a group */
-app.delete(baseurl + '/:app_id/groups/:group_id/members/:member_id', (req, res) => {
+app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', (req, res) => {
   // app.delete('/groups/:group_id/members/:member_id', (req, res) => {
   console.log('leave group');
   if (!req.params.member_id) {
@@ -726,7 +726,7 @@ app.delete(baseurl + '/:app_id/groups/:group_id/members/:member_id', (req, res) 
 });
 
 /** Update group (just group name) */
-app.put(baseurl + '/:app_id/groups/:group_id', (req, res) => {
+app.put(BASEURL + '/:app_id/groups/:group_id', (req, res) => {
   console.log('set members group');
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
@@ -754,7 +754,7 @@ app.put(baseurl + '/:app_id/groups/:group_id', (req, res) => {
 });
 
 /** Update group custom attributes */
-app.put(baseurl + '/:app_id/groups/:group_id/attributes', (req, res) => {
+app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
   console.log('set members group');
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');

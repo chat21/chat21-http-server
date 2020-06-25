@@ -559,8 +559,9 @@ class Chat21Api {
         const that = this
         amqp.connect(process.env.RABBITMQ_URI, (err, conn) => {
             if (err) {
-                console.error("[AMQP]", err.message, "that.startMQ:", that.startMQ);
-                return setTimeout(that.startMQ, 1000);
+                console.error("[AMQP]", err.message);
+                return setTimeout(() => { that.startMQ() }, 1000);
+                // return setTimeout(that.startMQ, 1000);
             }
             conn.on("error", (err) => {
                 if (err.message !== "Connection closing") {
@@ -569,12 +570,12 @@ class Chat21Api {
             });
             conn.on("close", () => {
                 console.error("[AMQP] reconnecting");
-                console.error("[AMQP] that.startMQ:", that.startMQ);
-                return setTimeout(that.startMQ, 1000);
+                return setTimeout(() => { that.startMQ() }, 1000);
+                // return setTimeout(that.startMQ, 1000);
             });
             console.log("[AMQP] connected.");
             this.amqpConn = conn;
-            this.whenConnected();
+            that.whenConnected();
         });
     }
   
