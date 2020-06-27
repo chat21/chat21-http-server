@@ -134,7 +134,7 @@ app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) =
     const userid = req.params.userid
     const convid = req.params.convid
     const jwt = decodejwt(req)
-    console.log("app:", appid, "user:", userid, "convid:", convid, "token:", jwt)
+    // console.log("app:", appid, "user:", userid, "convid:", convid, "token:", jwt)
     if (jwt.sub !== userid && jwt.app_id !== appid) {
         res.status(401).end()
         return
@@ -152,7 +152,7 @@ app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) =
           success: true,
           result: messages
         }
-        console.log("REPLY:", reply)
+        // console.log("REPLY:", reply)
         res.status(200).json(reply)
       }
     })
@@ -233,95 +233,7 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
       }
     }
   )
-  // if (channel_type==null || channel_type=="direct") {  //is a direct message
-  //   // sendDirectMessage(sender_id, sender_fullname, recipient_id, recipient_fullname, text, app_id, attributes, timestamp, type, metadata) {
-  //   chatApi.sendDirectMessage(sender_id, sender_fullname, recipient_id, recipient_fullname, text, app_id, attributes, timestamp, type, metadata).then(function(result) {
-  //     console.log('result', result);
-  //     res.status(201).send(result);
-  //   });
-  // }else if (channel_type=="group") {
-  //   // sendGroupMessage(sender_id, sender_fullname, recipient_group_id, recipient_group_fullname, text, app_id, attributes, projectid, timestamp, type, metadata) {
-  //   chatApi.sendGroupMessage(sender_id, sender_fullname, recipient_id, recipient_fullname, text, app_id, attributes, undefined, timestamp, type, metadata).then(function(result) {
-  //     console.log('result', result);
-
-  //     res.status(201).send(result);
-  //   });
-  // }else {
-  //   res.status(405).send('channel_type error!');
-  // }
-
 });
-
-// function sendMessage(
-//     appid, // mandatory
-//     type, // optional | text
-//     text, // mandatory
-//     timestamp, // optional | null
-//     channel_type, // optional | direct
-//     sender, // mandatory
-//     sender_fullname, // mandatory
-//     recipient, // mandatory
-//     recipient_fullname, // mandatory
-//     attributes, // optional | null
-//     metadata, // optional | null
-//     callback // optional | null
-//   ) {
-//   const outgoing_message = {
-//     text: text,
-//     type: type,
-//     recipient_fullname: recipient_fullname,
-//     sender_fullname: sender_fullname,
-//     channel_type: channel_type? channel_type : "direct",
-//   }
-//   if (attributes) {
-//     outgoing_message.attributes = attributes
-//   }
-//   if (metadata) {
-//     outgoing_message.metadata = metadata
-//   }
-//   if (timestamp) {
-//     outgoing_message.timestamp = timestamp
-//   }
-//   console.log("outgoing_message:", outgoing_message)
-//   let dest_topic = `apps.${appid}.users.${sender}.messages.${recipient}.outgoing`
-//   const message_payload = JSON.stringify(outgoing_message)
-//   publish(exchange, dest_topic, Buffer.from(message_payload), function(err) {
-//     console.log("PUBLISHED: SENDING MESSAGE TO TOPIC:", dest_topic)
-//     if (err) {
-//       console.log("error sending message", err, "On topic", dest_topic)
-//       if (callback) {
-//         callback(err)
-//         return
-//       }
-//     }
-//     callback(null)
-//   });
-// }
-
-// function deliverMessage(
-//     exchange, // mandatory
-//     appid, // mandatory
-//     message, // mandatory
-//     inbox_of, // mandatory
-//     convers_with, // mandatory
-//     callback // optional | null
-//   ) {
-//   const deliver_message_topic = `apps.observer.${appid}.users.${inbox_of}.messages.${convers_with}.delivered`
-//   const message_payload = JSON.stringify(message)
-//   publish(exchange, deliver_message_topic, Buffer.from(message_payload), function(err) {
-//     console.log("PUBLISH: DELIVER MESSAGE TO TOPIC:", deliver_message_topic)
-//     if (err) {
-//       console.log("error delivering message to joined member on topic", deliver_message_topic)
-//       if (callback) {
-//         callback(err)
-//         return
-//       }
-//     }
-//     if (callback) {
-//       callback(null)
-//     }
-//   });
-// }
 
 // *****************************************
 // **************** GROUPS *****************
@@ -340,9 +252,9 @@ app.post(BASEURL + '/:appid/groups', (req, res) => {
         res.status(405).send('group_name not present!');
         return
     }
-    // if (!req.body.group_members) {
-    //     res.status(405).send('group_members not present!');
-    // }
+    if (!req.body.group_members) {
+        res.status(405).send('group_members not present!');
+    }
 
     let group_name = req.body.group_name;
     let group_id = req.body.group_id;
@@ -363,7 +275,9 @@ app.post(BASEURL + '/:appid/groups', (req, res) => {
       group_members = req.body.group_members;
     }
 
-    group_members[current_user] = 1;
+    if (!im_admin) {
+      group_members[current_user] = 1;
+    }
 
     let appid = req.user.appId;
 
@@ -484,180 +398,6 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
     }
   })
 });
-
-// /**
-//  * Joins a member to a group.
-//  * 1. Sends "{user} added to this group" message to every member of the group, including the joined one
-//  * 2. Pubblishes old group messages to the newly joined member timeline
-//  * NOTE: this method doesn't modify the group members neither sends a group.updated message to
-//  * the clients. Use addMemberToGroupAndNotifyUpdate() to reach these couple of goals.
-//  * 
-//  * @param {*} exchange 
-//  * @param {*} joined_member_id 
-//  * @param {*} group 
-//  * @param {*} callback 
-//  */
-// function joinGroup(exchange, joined_member_id, group, callback) {
-//   console.log("SENDING 'ADDED TO GROUP' TO EACH MEMBER INCLUDING THE JOINED ONE...", group)
-//   const appid = group.appId
-//   for (let [member_id, value] of Object.entries(group.members)) {
-//     console.log("to member:", member_id)
-//     const now = Date.now()
-//     const message = {
-//       message_id: uuid(),
-//       type: "text",
-//       text: joined_member_id + " added to group",
-//       timestamp: now,
-//       channel_type: "group",
-//       sender_fullname: "System",
-//       sender: "system",
-//       recipient_fullname: group.name,
-//       recipient: group.uid,
-//       status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
-//       attributes: {
-//         subtype:"info",
-//         updateconversation : true,
-//         messagelabel: {
-//           key: "MEMBER_JOINED_GROUP",
-//           parameters: {
-//             member_id: joined_member_id
-//             // fullname: fullname // OPTIONAL
-//           }
-//         }
-//       }
-//     }
-//     console.log("Member joined group message:", message)
-//     let inbox_of = member_id
-//     let convers_with = group.uid
-//     deliverMessage(exchange, appid, message, inbox_of, convers_with, function(err) {
-//       if (err) {
-//         console.log("error delivering message to joined member", inbox_of)
-//         callback(err)
-//         return
-//       }
-//       else {
-//         console.log("DELIVERED MESSAGE TO", inbox_of, "CONVERS_WITH", convers_with)
-//       }
-//     })
-//   }
-//   // 2. pubblish old group messages to the joined member (in the member/group-conversWith timeline)
-//   const userid = group.uid
-//   const convid = group.uid
-//   chatdb.lastMessages(appid, userid, convid, 1, 200, function(err, messages) {
-//     if (err) {
-//       console.log("Error", err)
-//       callback(err)
-//     }
-//     else if (!messages) {
-//       console.log("No messages in group", group.uid)
-//       callback(null)
-//     }
-//     else {
-//       console.log("delivering old group messages to:", joined_member_id)
-//       const inbox_of = joined_member_id
-//       const convers_with = group.uid
-//       messages.forEach(message => {
-//         // TODO: CHECK IN MESSAGE WAS ALREADY DELIVERED. (CLIENT? SERVER?)
-//         console.log("Message:", message.text)
-//         deliverMessage(exchange, appid, message, inbox_of, convers_with, function(err) {
-//           if (err) {
-//             console.log("error delivering message to joined member", inbox_of)
-//           }
-//           else {
-//             console.log("DELIVERED MESSAGE TO", inbox_of, "CONVERS_WITH", convers_with)
-//           }
-//         })
-//       });
-//       callback(null)
-//     }
-//   })
-// }
-
-// function addMemberToGroupAndNotifyUpdate(exchange, user, joined_member_id, group_id, callback) {
-//   chatdb.getGroup(group_id, function(err, group) {
-//     console.log("group found?", group, "err", err)
-//     if (err || !group) {
-//       const reply = {
-//           success: false,
-//           err: (err && err.message()) ? err.message() : "Not found",
-//           http_status: 404
-//       }
-//       // res.status(404).send(reply)
-//       if (callback) {
-//         callback(reply, null)
-//       }
-//     }
-//     else {
-//       console.log("group members", group.members)
-//       console.log("group owner", group.owner)
-//       im_owner = (group.owner === user.uid)
-//       im_admin = user.roles.admin
-//       console.log("im_owner:",im_owner)
-//       console.log("im_admin:",im_admin)
-//       if (im_admin || im_owner) {
-//         if (group.members[joined_member_id]) {
-//           const reply = {
-//             success: false,
-//             err: "Already a member",
-//             http_status: 401
-//           }
-//           if (callback) {
-//             callback(reply, null)
-//           }
-//           return
-//         }
-//         group.members[joined_member_id] = 1
-//         chatdb.joinGroup(group_id, joined_member_id, function(err) {
-//           if (err) {
-//             console.log("An error occurred:", err)
-//             const reply = {
-//                 success: false,
-//                 err: err.message() ? err.message() : "Error joining group",
-//                 http_status: 500
-//             }
-//             // res.status(500).send(reply)
-//             if (callback) {
-//               callback(reply, null)
-//             }
-//           }
-//           else {
-//             console.log("group updated with new joined member.")
-//             notifyGroupUpdate(exchange, group, group.members, function(err) {
-//               console.log("PUBLISHED 'UPDATE GROUP'")
-//               if (err) {
-//                 if (callback) {
-//                   callback({"success":false, "err": err, http_status: 500}, null)
-//                   return
-//                 }
-//               }
-//               else {
-//                 if (callback) {
-//                   callback(
-//                     {"success":true,
-//                       http_status: 200
-//                     },
-//                     group // SUCCESS!!!!
-//                   )
-//                   console.log("GROUP IS", group)
-//                 }
-//               }
-//             });
-//           }
-//         })
-//       }
-//       else {
-//         const reply = {
-//           success: false,
-//           err: "Not allowed"
-//         }
-//         // res.status(401).send(reply)
-//         if (callback) {
-//           callback(reply, null)
-//         }
-//       }
-//     }
-//   });
-// }
 
 /** Set members of a group */
 app.put(BASEURL + '/:app_id/groups/:group_id/members', (req, res) => {
@@ -806,8 +546,8 @@ function decodejwt(req) {
     // console.log("token:", token)
     var decoded = null
     try {
-        console.log("JWTKEY:", jwtKey)
-        console.log("token:", token)
+        // console.log("JWTKEY:", jwtKey)
+        // console.log("token:", token)
         
         decoded = jwt.verify(token, jwtKey);
     } catch(err) {

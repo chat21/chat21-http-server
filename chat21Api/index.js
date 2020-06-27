@@ -212,32 +212,32 @@ class Chat21Api {
         const userid = group.uid
         const convid = group.uid
         this.chatdb.lastMessages(appid, userid, convid, 1, 200, (err, messages) => {
-        if (err) {
-            console.log("Error", err)
-            callback(err)
-        }
-        else if (!messages) {
-            console.log("No messages in group", group.uid)
-            callback(null)
-        }
-        else {
-            console.log("delivering old group messages to:", joined_member_id)
-            const inbox_of = joined_member_id
-            const convers_with = group.uid
-            messages.forEach(message => {
-                // TODO: CHECK IN MESSAGE WAS ALREADY DELIVERED. (CLIENT? SERVER?)
-                console.log("Message:", message.text)
-                this.deliverMessage(appid, message, inbox_of, convers_with, (err) => {
-                    if (err) {
-                        console.log("error delivering message to joined member", inbox_of)
-                    }
-                    else {
-                        console.log("DELIVERED MESSAGE TO", inbox_of, "CONVERS_WITH", convers_with)
-                    }
-                })
-            });
-            callback(null)
-        }
+            if (err) {
+                console.log("Error", err)
+                callback(err)
+            }
+            else if (!messages) {
+                console.log("No messages in group", group.uid)
+                callback(null)
+            }
+            else {
+                console.log("delivering old group messages to:", joined_member_id)
+                const inbox_of = joined_member_id
+                const convers_with = group.uid
+                messages.forEach(message => {
+                    // TODO: CHECK IN MESSAGE WAS ALREADY DELIVERED. (CLIENT? SERVER?)
+                    console.log("Message:", message.text)
+                    this.deliverMessage(appid, message, inbox_of, convers_with, (err) => {
+                        if (err) {
+                            console.log("error delivering message to joined member", inbox_of)
+                        }
+                        else {
+                            console.log("DELIVERED MESSAGE TO", inbox_of, "CONVERS_WITH", convers_with)
+                        }
+                    })
+                });
+                callback(null)
+            }
         })
     }
 
