@@ -33,6 +33,16 @@ class Chat21Api {
         this.amqpConn = null;
     }
   
+    archiveConversation(app_id, user_id, convers_with, callback) {
+        let dest_topic = 'apps/' + app_id + '/users/' + user_id + '/conversations/' + convers_with + '/archive'
+        console.log("archive dest_topic:", dest_topic)
+        this.publish(dest_topic, Buffer.from(''), function(err) {
+            if (callback) {
+                callback(err)
+            }
+        });
+    }
+
     // REFACTOR AS SET MEMBERS
     createGroup(appid, group, callback) {
         // 1. create group json
@@ -460,7 +470,6 @@ class Chat21Api {
                     // 4. join new members
                     for (let [member_id, value] of Object.entries(new_members)) {
                         console.log(">>>>> JOINING MEMBER", member_id)
-                        // joinGroup(exchange, joined_member_id, group, callback) {
                         this.joinGroup(member_id, group, function(reply) {
                             console.log("member", member_id, "invited on group", group_id, "result", reply)
                         })

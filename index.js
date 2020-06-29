@@ -158,8 +158,50 @@ app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) =
     })
 })
 
+/** Delete a conversation */
+app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
+  console.log('delete a conversation');
+
+  if (!req.params.recipient_id) {
+    res.status(405).send('recipient_id is not present!');
+  }
+
+  if (!req.params.app_id) {
+      res.status(405).send('app_id is not present!');
+  }
+
+  let recipient_id = req.params.recipient_id;
+  let app_id = req.params.app_id;
+  
+  let user_id = req.user.uid;
+  const im_admin = req.user.roles.admin
+  if (req.body.user_id && im_admin) {
+    console.log('user_id from body', req.body.user_id);
+    user_id = req.body.user_id;
+  }
+
+  console.log('recipient_id', recipient_id);
+  console.log('app_id', app_id);
+  console.log('physicsDelete', physicsDelete);
+  console.log('user_id', user_id);
+
+  chatapi.archiveConversation(appid, user_id, convers_with, function(err) {
+    if (err) {
+      res.status(500).send({"success":false, "err": err});
+    }
+    else {
+      res.status(201).send({"success":true});
+    }
+  })
+
+  // chatApi.archiveConversation(user_id, recipient_id, app_id).then(function(result) {
+  //   console.log('result', result);
+  //   res.status(204).send({"success":true});
+  // });
+});
+
 /**
- * Send a message.
+ * Sends a message.
  *
  * This endpoint supports CORS.
  */
