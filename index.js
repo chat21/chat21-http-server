@@ -184,7 +184,7 @@ app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
   console.log('app_id', app_id);
   console.log('user_id', user_id);
 
-  chatapi.archiveConversation(appid, user_id, convers_with, function(err) {
+  chatapi.archiveConversation(app_id, user_id, convers_with, function(err) {
     if (err) {
       res.status(500).send({"success":false, "err": err});
     }
