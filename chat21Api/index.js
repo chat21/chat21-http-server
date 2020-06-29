@@ -36,7 +36,10 @@ class Chat21Api {
     archiveConversation(app_id, user_id, convers_with, callback) {
         let dest_topic = `apps.${app_id}.users.${user_id}.conversations.${convers_with}.archive`
         console.log("archive dest_topic:", dest_topic)
-        const payload = JSON.stringify({})
+        let patch = {
+            action: 'archive'
+        }
+        const payload = JSON.stringify(patch)
         this.publish(dest_topic, Buffer.from(payload), function(err) {
             if (callback) {
                 callback(err)
