@@ -38,6 +38,7 @@ class Chat21Api {
         console.log("archive dest_topic:", dest_topic)
         let patch = {
             action: 'archive'
+            
         }
         const payload = JSON.stringify(patch)
         this.publish(dest_topic, Buffer.from(payload), function(err) {
