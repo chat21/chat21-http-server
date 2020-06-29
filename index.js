@@ -182,7 +182,6 @@ app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
 
   console.log('recipient_id', recipient_id);
   console.log('app_id', app_id);
-  console.log('physicsDelete', physicsDelete);
   console.log('user_id', user_id);
 
   chatapi.archiveConversation(appid, user_id, convers_with, function(err) {
