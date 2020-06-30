@@ -156,7 +156,7 @@ class Chat21Api {
      */
     notifyGroupUpdate(group, users_to_be_notified, callback) {
         var update_group_topic = `apps.observer.${group.appId}.groups.update`
-        console.log("updating group " + JSON.stringify(group) + " to "+ update_group_topic);
+        console.log("updating group to "+ update_group_topic);
         const data = {
           payload: group,
           notify_to: users_to_be_notified //{...new_members, ...old_members }
@@ -551,7 +551,7 @@ class Chat21Api {
                     callback(reply)
                     return
                 }
-                console.log("....saved group with no member.", group)
+                // console.log("....saved group with no member.", group)
                 this.notifyGroupUpdate(group, group.members, (err) => {
                     if (err) {
                         callback(err);
