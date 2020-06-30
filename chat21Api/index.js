@@ -259,8 +259,8 @@ class Chat21Api {
     leaveGroup(user, removed_member_id, group_id, app_id, callback) {
         // get group by id
         this.chatdb.getGroup(group_id, (err, group) => {
-            console.log("group found?", group, "err", err)
             if (err || !group) {
+              console.log("group found? with err", err)
               const reply = {
                   success: false,
                   err: (err && err.message()) ? err.message() : "Not found",
@@ -271,8 +271,9 @@ class Chat21Api {
               }
             }
             else {
-              console.log("group members", group.members)
-              console.log("group owner", group.owner)
+              console.log("group found.")
+              console.log("group members", JSON.stringify(group.members))
+              console.log("group owner", JSON.stringify(group.owner))
               const im_owner = (group.owner === user.uid)
               const im_admin = user.roles.admin
               const im_member = group.members[user.uid]
@@ -439,8 +440,8 @@ class Chat21Api {
 
     setGroupMembers(user, new_members, group_id, callback) {
         this.chatdb.getGroup(group_id, (err, group) => {
-            console.log("group found?", group, "err", err)
             if (err || !group) {
+                console.log("group found? with err", err)
                 callback({err: {message: "Not found"}})
                 return
             }
@@ -486,8 +487,9 @@ class Chat21Api {
 
     updateGroupData(user, group_name, group_id, callback) {
         this.chatdb.getGroup(group_id, (err, group) => {
-            console.log("group found?", group, "err", err)
+            console.log("group found? with err", err)
             if (err || !group) {
+                console.log("group found? with err", err)
                 callback({err: {message: "Not found"}})
                 return
             }
@@ -511,7 +513,7 @@ class Chat21Api {
                     callback(reply)
                     return
                 }
-                console.log("....saved group with no member.", group)
+                console.log("....saved group with no member.", JSON.stringify(group))
                 this.notifyGroupUpdate(group, group.members, (err) => {
                     if (err) {
                         callback(err);

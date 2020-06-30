@@ -160,7 +160,7 @@ app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) =
 
 /** Delete a conversation */
 app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
-  console.log('delete a conversation');
+  console.log('delete a conversation:', req.params);
 
   if (!req.params.recipient_id) {
     res.status(405).send('recipient_id is not present!');
@@ -442,7 +442,7 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
 
 /** Set members of a group */
 app.put(BASEURL + '/:app_id/groups/:group_id/members', (req, res) => {
-  console.log('set members group', req.body);
+  console.log('Set members of a group', req.body);
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
@@ -508,7 +508,7 @@ app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', (req, res) 
 
 /** Update group (just group name) */
 app.put(BASEURL + '/:app_id/groups/:group_id', (req, res) => {
-  console.log('set members group');
+  console.log('Update group (just group name)');
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
@@ -536,7 +536,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id', (req, res) => {
 
 /** Update group custom attributes */
 app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
-  console.log('set members group');
+  console.log('Update group custom attributes');
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
