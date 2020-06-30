@@ -237,17 +237,17 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
   let type = req.body.type;
   let metadata = req.body.metadata;
   let timestamp = req.body.timestamp;
-  console.log('sender_id', sender_id);
-  console.log('sender_fullname', sender_fullname);
-  console.log('recipient_id', recipient_id);
-  console.log('recipient_fullname', recipient_fullname);
-  console.log('text', text);
-  console.log('app_id', appid);
-  console.log('channel_type', channel_type);
-  console.log('attributes', attributes);
-  console.log('type', type);
-  console.log('metadata', metadata);
-  console.log('timestamp', timestamp);
+  console.log('sender_id:', sender_id);
+  // console.log('sender_fullname', sender_fullname);
+  console.log('recipient_id:', recipient_id);
+  // console.log('recipient_fullname', recipient_fullname);
+  console.log('text:', text);
+  // console.log('app_id', appid);
+  console.log('channel_type:', channel_type);
+  // console.log('attributes', attributes);
+  // console.log('type', type);
+  // console.log('metadata', metadata);
+  // console.log('timestamp', timestamp);
   chatapi.sendMessage(
     appid, // mandatory
     type, // optional | text

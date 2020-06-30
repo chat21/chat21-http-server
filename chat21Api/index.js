@@ -158,11 +158,11 @@ class Chat21Api {
         var update_group_topic = `apps.observer.${group.appId}.groups.update`
         console.log("updating group " + JSON.stringify(group) + " to "+ update_group_topic);
         const data = {
-          group: group,
+          payload: group,
           notify_to: users_to_be_notified //{...new_members, ...old_members }
         }
-        console.log("payload:", data)
         const group_payload = JSON.stringify(data)
+        console.log("payload:", group_payload)
         this.publish(update_group_topic, Buffer.from(group_payload), (err) => {
           console.log("PUBLISHED 'UPDATE GROUP' ON TOPIC", update_group_topic)
           callback(err)
@@ -422,7 +422,7 @@ class Chat21Api {
       if (timestamp) {
         outgoing_message.timestamp = timestamp
       }
-      console.log("outgoing_message:", outgoing_message)
+      console.log("outgoing_message:", JSON.stringify(outgoing_message))
       let dest_topic = `apps.${appid}.users.${sender}.messages.${recipient}.outgoing`
       const message_payload = JSON.stringify(outgoing_message)
       this.publish(dest_topic, Buffer.from(message_payload), function(err) {
