@@ -176,13 +176,13 @@ app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
   let user_id = req.user.uid;
   const im_admin = req.user.roles.admin
   if (req.body.user_id && im_admin) {
-    console.log('user_id from body', req.body.user_id);
+    console.log('user_id from body:', req.body.user_id);
     user_id = req.body.user_id;
   }
 
-  console.log('recipient_id', recipient_id);
-  console.log('app_id', app_id);
-  console.log('user_id', user_id);
+  // console.log('recipient_id:', recipient_id);
+  // console.log('app_id:', app_id);
+  console.log('user_id:', user_id);
 
   chatapi.archiveConversation(app_id, user_id, recipient_id, function(err) {
     if (err) {

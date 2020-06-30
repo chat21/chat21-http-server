@@ -67,8 +67,8 @@ class Chat21Api {
 
     addMemberToGroupAndNotifyUpdate(user, joined_member_id, group_id, callback) {
         this.chatdb.getGroup(group_id, (err, group) => {
-          console.log("group found?", group, "err", err)
           if (err || !group) {
+            console.log("group found? with err", err)
             const reply = {
                 success: false,
                 err: (err && err.message()) ? err.message() : "Not found",
@@ -80,8 +80,8 @@ class Chat21Api {
             }
           }
           else {
-            console.log("group members", group.members)
-            console.log("group owner", group.owner)
+            // console.log("group members", group.members)
+            // console.log("group owner", group.owner)
             const im_owner = (group.owner === user.uid)
             const im_admin = user.roles.admin
             console.log("im_owner:",im_owner)
@@ -487,7 +487,6 @@ class Chat21Api {
 
     updateGroupData(user, group_name, group_id, callback) {
         this.chatdb.getGroup(group_id, (err, group) => {
-            console.log("group found? with err", err)
             if (err || !group) {
                 console.log("group found? with err", err)
                 callback({err: {message: "Not found"}})
@@ -527,8 +526,8 @@ class Chat21Api {
 
     updateGroupAttributes(user, group_attributes, group_id, callback) {
         this.chatdb.getGroup(group_id, (err, group) => {
-            console.log("group found?", group, "err", err)
             if (err || !group) {
+                console.log("group found? with err", err)
                 callback({err: {message: "Not found"}})
                 return
             }
