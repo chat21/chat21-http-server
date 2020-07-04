@@ -160,7 +160,8 @@ app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) =
 
 /** Delete a conversation */
 app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
-  console.log('delete a conversation:', req.params);
+  console.log('delete a conversation req.params:', req.params);
+  console.log('delete a req.body:', req.body);
 
   if (!req.params.recipient_id) {
     res.status(405).send('recipient_id is not present!');
