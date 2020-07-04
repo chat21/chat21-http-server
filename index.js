@@ -176,6 +176,7 @@ app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
   
   let user_id = req.user.uid;
   const im_admin = req.user.roles.admin
+  console.log("im_admin?", im_admin, "roles:", req.user.roles)
   if (req.body.user_id && im_admin) {
     console.log('user_id from body:', req.body.user_id);
     user_id = req.body.user_id;
