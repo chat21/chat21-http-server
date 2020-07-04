@@ -584,7 +584,7 @@ function decodejwt(req) {
     else {
       return null;
     }
-    // console.log("token:", token)
+    console.log("token:", token)
     var decoded = null
     try {
         // console.log("JWTKEY:", jwtKey)
