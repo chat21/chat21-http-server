@@ -443,7 +443,7 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
 
 /** Set members of a group */
 app.put(BASEURL + '/:app_id/groups/:group_id/members', (req, res) => {
-  console.log('Set members of a group', req.body);
+  console.log('Set members of a group with:', req.body);
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
@@ -460,7 +460,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/members', (req, res) => {
   // req.body.members.forEach(m => {
   //   new_members[m] = 1
   // })
-  console.log("new_members:", new_members)
+  // console.log("new_members:", new_members)
   const group_id = req.params.group_id
   const user = req.user
   chatapi.setGroupMembers(user, new_members, group_id, function(err) {
@@ -476,7 +476,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/members', (req, res) => {
 /** Leave a group */
 app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', (req, res) => {
   // app.delete('/groups/:group_id/members/:member_id', (req, res) => {
-  console.log('leave group');
+  console.log('Leave group');
   if (!req.params.member_id) {
       res.status(405).send('member_id is mandatory');
       return
@@ -493,10 +493,10 @@ app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', (req, res) 
   let group_id = req.params.group_id;
   let app_id = req.params.app_id;
   const user = req.user
-  console.log('member_id', member_id);
-  console.log('group_id', group_id);
-  console.log('app_id', app_id);
-  console.log('user', user);
+  console.log('member_id:', member_id);
+  console.log('group_id:', group_id);
+  console.log('app_id:', app_id);
+  console.log('user:', user.uid);
   chatapi.leaveGroup(user, member_id, group_id, app_id, function(err) {
     if (err) {
       res.status(405).send(err)
@@ -537,7 +537,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id', (req, res) => {
 
 /** Update group custom attributes */
 app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
-  console.log('Update group custom attributes');
+  console.log('Update group custom attributes for group:', req.params.group_id, "body:", JSON.stringify(req.body));
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return

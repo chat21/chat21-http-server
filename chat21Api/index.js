@@ -163,7 +163,7 @@ class Chat21Api {
           notify_to: users_to_be_notified //{...new_members, ...old_members }
         }
         const group_payload = JSON.stringify(data)
-        console.log("payload:", group_payload)
+        // console.log("payload:", group_payload)
         this.publish(update_group_topic, Buffer.from(group_payload), (err) => {
           console.log("PUBLISHED 'UPDATE GROUP' ON TOPIC", update_group_topic)
           callback(err)
@@ -285,8 +285,8 @@ class Chat21Api {
               if ((im_admin || im_owner || im_member) && member_exists) {
                 let old_members = {...group.members};
                 delete group.members[removed_member_id]
-                console.log("old_members:", old_members)
-                console.log("new_members:", group.members)
+                console.log("old members:", JSON.stringify(old_members))
+                console.log("new members:", JSON.stringify(group.members))
                 this.chatdb.saveOrUpdateGroup(group, (err) => {
                     if (err) {
                         console.log("An error occurred:", err)
@@ -468,7 +468,7 @@ class Chat21Api {
                     callback(reply)
                     return
                 }
-                console.log("....saved group with no member.", group)
+                console.log("....saved group with no member.", JSON.stringify(group))
                 this.notifyGroupUpdate(group, old_members, (err) => { // TO OLD MEMBERS
                     if (err) {
                         callback(err);
