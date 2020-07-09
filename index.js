@@ -88,7 +88,7 @@ app.get(BASEURL + "/:appid/:userid/conversations", (req, res) => {
 function authorize(req, res) {
   const appid = req.params.appid
   // const userid = req.params.userid
-  console.log("appId:", appid, "user:", req.user)
+  console.log("appId:", appid, "user:", JSON.stringify(req.user))
   if (!req.user || (req.user.appId !== appid)) { // (req.user.uid !== userid) || 
     res.status(401).end()
     return false
@@ -160,8 +160,7 @@ app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) =
 
 /** Delete a conversation */
 app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
-  console.log('delete a conversation req.params:', req.params);
-  console.log('delete a req.body:', req.body);
+  console.log('delete: Conversation. req.params:', req.params, 'req.body:', req.body)
 
   if (!req.params.recipient_id) {
     res.status(405).send('recipient_id is not present!');
@@ -586,12 +585,9 @@ function decodejwt(req) {
     else {
       return null;
     }
-    console.log("token:", token)
+    // console.log("token:", token)
     var decoded = null
     try {
-        // console.log("JWTKEY:", jwtKey)
-        // console.log("token:", token)
-        
         decoded = jwt.verify(token, jwtKey);
     } catch(err) {
         console.log("err", err)

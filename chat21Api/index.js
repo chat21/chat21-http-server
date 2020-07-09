@@ -9,6 +9,7 @@
 
 var amqp = require('amqplib/callback_api');
 const { uuid } = require('uuidv4');
+const { JsonWebTokenError } = require('jsonwebtoken');
 
 class Chat21Api {
 
@@ -156,7 +157,7 @@ class Chat21Api {
      */
     notifyGroupUpdate(group, users_to_be_notified, callback) {
         var update_group_topic = `apps.observer.${group.appId}.groups.update`
-        console.log("updating group to "+ update_group_topic);
+        console.log("updating group to " + update_group_topic);
         const data = {
           payload: group,
           notify_to: users_to_be_notified //{...new_members, ...old_members }
@@ -181,7 +182,7 @@ class Chat21Api {
      * @param {*} callback 
      */
     joinGroup(joined_member_id, group, callback) {
-        console.log("SENDING 'ADDED TO GROUP' TO EACH MEMBER INCLUDING THE JOINED ONE...", group)
+        console.log("SENDING 'ADDED TO GROUP' TO EACH MEMBER INCLUDING THE JOINED ONE (group:", group.uid, ") - members:", JSON.stringify(group.members))
         const appid = group.appId
         for (let [member_id, value] of Object.entries(group.members)) {
             console.log("to member:", member_id)
@@ -209,7 +210,7 @@ class Chat21Api {
                     }
                 }
             }
-            console.log("Member joined group message:", message)
+            console.log("Member joined group message:", JSON.stringify(message))
             let inbox_of = member_id
             let convers_with = group.uid
             this.deliverMessage(appid, message, inbox_of, convers_with, (err) => {
@@ -258,6 +259,7 @@ class Chat21Api {
 
     leaveGroup(user, removed_member_id, group_id, app_id, callback) {
         // get group by id
+        console.log("member:", removed_member_id, "will leave group:", group_id)
         this.chatdb.getGroup(group_id, (err, group) => {
             if (err || !group) {
               console.log("group found? with err", err)
@@ -272,7 +274,7 @@ class Chat21Api {
             }
             else {
               console.log("group found.")
-              console.log("group members", JSON.stringify(group.members))
+              console.log("actual group members", JSON.stringify(group.members))
               console.log("group owner", JSON.stringify(group.owner))
               const im_owner = (group.owner === user.uid)
               const im_admin = user.roles.admin
@@ -295,7 +297,7 @@ class Chat21Api {
                         callback(reply)
                         return
                     }
-                    console.log("....saved group with no leaved member.", group)
+                    console.log("....saved group with leaved member.", JSON.stringify(group))
                     console.log("... notify to old members",old_members, "the new group")
                     this.notifyGroupUpdate(group, old_members, (err) => { // TO OLD MEMBERS
                         if (err) {
@@ -334,7 +336,7 @@ class Chat21Api {
                                     }
                                 }
                             }
-                            console.log("Member left group message:", message)
+                            console.log("Member left group message:", JSON.stringify(message))
                             let inbox_of = member_id
                             let convers_with = group.uid
                             this.deliverMessage(group.appId, message, inbox_of, convers_with, function(err) {
