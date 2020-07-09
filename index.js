@@ -206,7 +206,7 @@ app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
  * This endpoint supports CORS.
  */
 app.post(BASEURL + '/:app_id/messages', (req, res) => {
-  console.log('/:app_id/messages', req.body);
+  console.log('Sends a message:', JSON.stringify(req.body));
   if (!req.body.sender_fullname) {
       res.status(405).send('Sender Fullname is mandatory');
       return
