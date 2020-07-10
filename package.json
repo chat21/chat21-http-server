@@ -1,6 +1,6 @@
 {
-  "name": "jwt-auth-server",
-  "version": "1.0.0",
+  "name": "chat21-http-server",
+  "version": "0.1.0",
   "description": "",
   "main": "server.js",
   "dependencies": {
