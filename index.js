@@ -54,6 +54,10 @@ app.use(function (req, res, next) {
   next();
 });
 
+app.get("/", (req, res) => {
+  res.status(200).send("Chat21 Http Server v. 0.1.2")
+})
+
 app.get("/verify", (req, res) => {
     const decoded = decodejwt(req)
     res.status(200).send(decoded)
