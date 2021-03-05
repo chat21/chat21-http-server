@@ -13,12 +13,16 @@
     "mongodb": "^3.5.7",
     "querystring": "^0.2.0",
     "uuid": "^8.1.0",
-    "uuidv4": "^6.0.8"
+    "uuidv4": "^6.0.8",
+    "winston": "^3.3.3"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "chai": "^4.3.3",
+    "mocha": "^8.3.0"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "test": "mocha ./test/*.js",
+    "start":  "node ./bin/www"
   },
   "author": "",
   "license": "ISC"

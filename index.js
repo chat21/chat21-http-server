@@ -1,5 +1,6 @@
 const express = require("express") // // //
 const bodyParser = require("body-parser")
+const winston = require("./winston");
 const jwt = require("jsonwebtoken")
 const { uuid } = require('uuidv4');
 var cors = require('cors');
@@ -50,8 +51,13 @@ app.use(function (req, res, next) {
     }
     // adds "jwt" to req
     req['jwt'] = jwt
+
+    next();
+  } else {
+    winston.error('Unauthorized.');
+    return res.status(403).send({success: false, msg: 'Unauthorized.'});
   }
-  next();
+  
 });
 
 app.get("/", (req, res) => {
@@ -213,22 +219,30 @@ app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
 app.post(BASEURL + '/:app_id/messages', (req, res) => {
   console.log('Sends a message:', JSON.stringify(req.body));
   if (!req.body.sender_fullname) {
+      winston.error('Sender Fullname is mandatory');
       res.status(405).send('Sender Fullname is mandatory');
       return
   }
   else if (!req.body.recipient_id) {
+      winston.error('Recipient id is mandatory');
       res.status(405).send('Recipient id is mandatory');
       return
   }
   else if (!req.body.recipient_fullname) {
+      winston.error('Recipient Fullname is mandatory');
       res.status(405).send('Recipient Fullname is mandatory');
       return
   }
   else if (!req.body.text) {
+      winston.error('text is mandatory');
       res.status(405).send('text is mandatory');
       return
   }
+  winston.debug('validation ok');
+
   let sender_id = req.user.uid;
+  winston.debug('sender_id' + sender_id);
+
   im_admin = req.user.roles.admin // admin can force sender_id to someone different from current user
   if (im_admin && req.body.sender_id) {
     sender_id = req.body.sender_id;
@@ -600,112 +614,35 @@ function decodejwt(req) {
     return decoded
 }
 
-// var port = process.env.PORT || 8004;
-// console.log("Starting server on port", port)
-// app.listen(port, () => {
-//     console.log('Server started.')
-// });
 
-const mongouri = process.env.MONGODB_URI || "mongodb://localhost:27017/chatdb";
-// var ObjectID = mongodb.ObjectID;
-// Create a database variable outside of the
-// database connection callback to reuse the connection pool in the app.
-var db;
-console.log("connecting to mongodb...")
-mongodb.MongoClient.connect(mongouri, { useNewUrlParser: true, useUnifiedTopology: true }, function (err, client) {
-  if (err) {
-    console.log(err);
-    process.exit(1);
-  } else {
-    console.log("MongoDB successfully connected.")
-  }
+
+
+
+async function startServer() {
+
+  console.log("connecting to mongodb...")
+
+  const mongouri = process.env.MONGODB_URI || "mongodb://localhost:27017/chatdb";
+  // var ObjectID = mongodb.ObjectID;
+  // Create a database variable outside of the
+  // database connection callback to reuse the connection pool in the app.
+  var db;
+
+  var client = await mongodb.MongoClient.connect(mongouri, { useNewUrlParser: true, useUnifiedTopology: true })
+  console.log("mongodb connected...", db)
+
   db = client.db();
   chatdb = new ChatDB({database: db})
-  var port = process.env.PORT || 8004;
-  console.log("Starting server on port", port)
+  
   chatapi = new Chat21Api({exchange: 'amq.topic', database: chatdb});
-  chatapi.start();
-  app.listen(port, () => {
-    console.log('Server started.')
-    console.log('Starting AMQP publisher...')
-  });
-});
+  var amqpConnection = await chatapi.start();  
+  console.log("[AMQP] connected.", amqpConnection);
 
 
-// // AMQP COMMUNICATION
+}
 
-// function startMQ() {
-//   console.log("Connecting to RabbitMQ...")
-//   amqp.connect(process.env.RABBITMQ_URI, function (err, conn) {
-//     if (err) {
-//       console.error("[AMQP]", err.message);
-//       return setTimeout(startMQ, 1000);
-//     }
-//     conn.on("error", function (err) {
-//       if (err.message !== "Connection closing") {
-//         console.error("[AMQP] conn error", err.message);
-//       }
-//     });
-//     conn.on("close", function () {
-//       console.error("[AMQP] reconnecting");
-//       return setTimeout(startMQ, 1000);
-//     });
-//     console.log("[AMQP] connected.");
-//     amqpConn = conn;
-//     whenConnected();
-//   });
-// }
+// startServer();
 
-// function whenConnected() {
-//   startPublisher();
-// }
 
-// var pubChannel = null;
-// var offlinePubQueue = [];
-// function startPublisher() {
-//   amqpConn.createConfirmChannel(function (err, ch) {
-//     if (closeOnErr(err)) return;
-//     ch.on("error", function (err) {
-//       console.error("[AMQP] channel error", err.message);
-//     });
-//     ch.on("close", function () {
-//       console.log("[AMQP] channel closed");
-//     });
-//     pubChannel = ch;
-//     if (offlinePubQueue.length > 0) {
-//       while (true) {
-//         var [exchange, routingKey, content] = offlinePubQueue.shift();
-//         publish(exchange, routingKey, content);
-//       }
-//     }
-//   });
-// }
 
-// function publish(exchange, routingKey, content, callback) {
-//   try {
-//     pubChannel.publish(exchange, routingKey, content, { persistent: true },
-//       function (err, ok) {
-//         if (err) {
-//           console.error("[AMQP] publish", err);
-//           offlinePubQueue.push([exchange, routingKey, content]);
-//           pubChannel.connection.close();
-//           callback(err)
-//         }
-//         else {
-//           console.log("published to", routingKey, "result", ok)
-//           callback(null)
-//         }
-//       });
-//   } catch (e) {
-//     console.error("[AMQP] publish", e.message);
-//     offlinePubQueue.push([exchange, routingKey, content]);
-//     callback(e)
-//   }
-// }
-
-// function closeOnErr(err) {
-//   if (!err) return false;
-//   console.error("[AMQP] error", err);
-//   amqpConn.close();
-//   return true;
-// }
+module.exports = {app: app, startServer: startServer};

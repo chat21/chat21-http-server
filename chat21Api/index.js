@@ -568,55 +568,76 @@ class Chat21Api {
       // AMQP COMMUNICATION
 
     start() {
-        this.startMQ()
+        return this.startMQ()
     }
 
-    startMQ() {
-        console.log("Connecting to RabbitMQ...")
-        const that = this
-        amqp.connect(process.env.RABBITMQ_URI, (err, conn) => {
-            if (err) {
-                console.error("[AMQP]", err.message);
-                return setTimeout(() => { that.startMQ() }, 1000);
-                // return setTimeout(that.startMQ, 1000);
-            }
-            conn.on("error", (err) => {
-                if (err.message !== "Connection closing") {
-                    console.error("[AMQP] conn error", err.message);
+    startMQ() {    
+        const that = this;
+        return new Promise(function (resolve, reject) {
+            console.log("Connecting to RabbitMQ...")
+            amqp.connect(process.env.RABBITMQ_URI, (err, conn) => {
+                if (err) {
+                    console.error("[AMQP]", err.message);                    
+                    return setTimeout(() => { that.startMQ() }, 1000);
+                    // return setTimeout(that.startMQ, 1000);
                 }
+                conn.on("error", (err) => {
+                    if (err.message !== "Connection closing") {
+                        console.error("[AMQP] conn error", err.message);
+                        return reject(err);
+                    }
+                });
+                conn.on("close", () => {
+                    console.error("[AMQP] reconnecting");
+                    return setTimeout(() => { that.startMQ() }, 1000);
+                    // return setTimeout(that.startMQ, 1000);
+                });
+                // console.log("[AMQP] connected.", conn);
+                that.amqpConn = conn;
+                that.whenConnected().then(function(ch) {
+                    return resolve({conn: conn, ch: ch});
+                });
+
+                
             });
-            conn.on("close", () => {
-                console.error("[AMQP] reconnecting");
-                return setTimeout(() => { that.startMQ() }, 1000);
-                // return setTimeout(that.startMQ, 1000);
-            });
-            console.log("[AMQP] connected.");
-            this.amqpConn = conn;
-            that.whenConnected();
         });
     }
   
     whenConnected() {
-        this.startPublisher();
+        // console.log("whenConnected")
+        return this.startPublisher();
     }
   
     startPublisher() {
-        this.amqpConn.createConfirmChannel( (err, ch) => {
-            if (this.closeOnErr(err)) return;
-            ch.on("error", function (err) {
-                console.error("[AMQP] channel error", err.message);
-            });
-            ch.on("close", function () {
-                console.log("[AMQP] channel closed");
-            });
-            this.pubChannel = ch;
-            if (this.offlinePubQueue.length > 0) {
-                while (true) {
-                    console.log("PERICOLOOOOOOOOOOOO")
-                    var [exchange, routingKey, content] = this.offlinePubQueue.shift();
-                    this.publish(routingKey, content);
+        var that = this;
+        return new Promise(function (resolve, reject) {
+            that.amqpConn.createConfirmChannel( (err, ch) => {
+                if (that.closeOnErr(err)) return;
+                ch.on("error", function (err) {
+                    console.error("[AMQP] channel error", err.message);
+                });
+                ch.on("close", function () {
+                    console.log("[AMQP] channel closed");
+                });
+                that.pubChannel = ch;
+                // console.log("this.offlinePubQueue.length",that.offlinePubQueue.length)
+                if (that.offlinePubQueue.length > 0) {
+
+                    // while (true) {
+                    //     var m = this.offlinePubQueue.shift();
+                    //     if (!m) break;
+                    //     this.publish(m[0], m[1], m[2]);
+                    //   }
+
+                    while (true) {
+                        console.log("PERICOLOOOOOOOOOOOO",that.offlinePubQueue)
+                        var [exchange, routingKey, content] = that.offlinePubQueue.shift();
+                        // if (!content) break;
+                        that.publish(routingKey, content);
+                    }
                 }
-            }
+                return resolve(ch)
+            });
         });
     }
   
@@ -628,17 +649,25 @@ class Chat21Api {
                     console.error("[AMQP] publish", err);
                     this.offlinePubQueue.push([this.exchange, routingKey, content]);
                     this.pubChannel.connection.close();
-                    callback(err)
+
+                    if (callback) {
+                        callback(err)
+                    }
+                    
                 }
                 else {
                     console.log("published to", routingKey, "result", ok)
-                    callback(null)
+                    if (callback) {
+                        callback(null)
+                    }
                 }
             });
         } catch (e) {
             console.error("[AMQP] publish", e.message);
             this.offlinePubQueue.push([this.exchange, routingKey, content]);
-            callback(e)
+            if (callback) {
+                callback(e)
+            }
         }
     }
   
