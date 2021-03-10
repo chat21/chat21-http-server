@@ -1,8 +1,8 @@
 {
-  "name": "chat21-http-server",
+  "name": "@chat21/chat21-http-server",
   "version": "0.1.0",
   "description": "",
-  "main": "server.js",
+  "main": "./bin/www",
   "dependencies": {
     "amqplib": "^0.5.6",
     "body-parser": "^1.19.0",
@@ -18,12 +18,23 @@
   },
   "devDependencies": {
     "chai": "^4.3.3",
-    "mocha": "^8.3.0"
+    "mocha": "^8.3.0",
+    "@chat21/chat21-server": "0.1.0"
   },
   "scripts": {
     "test": "mocha ./test/*.js",
-    "start":  "node ./bin/www"
+    "pretest": "mongodb-runner start",
+    "posttest": "mongodb-runner stop",
+    "start": "node ./bin/www"
   },
-  "author": "",
-  "license": "ISC"
+  "homepage": "http://www.chat21.org",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chat21/chat21-http-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chat21/chat21-http-server/issues"
+  },
+  "author": "Andrea Sponziello",
+  "license": "MIT"
 }

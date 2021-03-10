@@ -71,14 +71,14 @@ app.get("/verify", (req, res) => {
 
 
 app.get(BASEURL + "/:appid/:userid/conversations", (req, res) => {
-  console.log("getting /:appid/:userid/conversations")
+  winston.debug("getting /:appid/:userid/conversations")
   if (!authorize(req, res)) {
-    console.log("Unauthorized!")
+    winston.debug("Unauthorized!")
     return
   }
-  console.log("Go with conversations!")
+  winston.debug("Go with conversations!")
   conversations(req, false, function(err, docs) {
-    console.log("got conversations", docs, err)
+    winston.debug("got conversations", docs, err)
     if (err) {
       const reply = {
           success: false,
@@ -99,7 +99,7 @@ app.get(BASEURL + "/:appid/:userid/conversations", (req, res) => {
 function authorize(req, res) {
   const appid = req.params.appid
   // const userid = req.params.userid
-  console.log("appId:", appid, "user:", JSON.stringify(req.user))
+  winston.debug("appId:", appid, "user:", JSON.stringify(req.user))
   if (!req.user || (req.user.appId !== appid)) { // (req.user.uid !== userid) || 
     res.status(401).end()
     return false
@@ -108,7 +108,7 @@ function authorize(req, res) {
 }
 
 app.get(BASEURL + "/:appid/:userid/archived_conversations", (req, res) => {
-  console.log("GET /:appid/:userid/archived_conversations")
+  winston.debug("GET /:appid/:userid/archived_conversations")
   if (!authorize(req, res)) {
     return
   }
@@ -131,7 +131,7 @@ app.get(BASEURL + "/:appid/:userid/archived_conversations", (req, res) => {
 })
 
 function conversations(req, archived, callback) {
-  console.log("getting /:appid/:userid/archived_conversations")
+  // winston.debug("getting /:appid/:userid/archived_conversations")
   const appid = req.params.appid
   const userid = req.params.userid
   chatdb.lastConversations(appid, userid, archived, function(err, docs) {
@@ -140,13 +140,13 @@ function conversations(req, archived, callback) {
 }
 
 app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) => {
-    console.log("getting /:appid/:userid/messages")
+    winston.debug("getting /:appid/:userid/messages")
     const appid = req.params.appid
     const userid = req.params.userid
     const convid = req.params.convid
     const jwt = decodejwt(req)
-    // console.log("app:", appid, "user:", userid, "convid:", convid, "token:", jwt)
-    if (jwt.sub !== userid && jwt.app_id !== appid) {
+    // winston.debug("app:", appid, "user:", userid, "convid:", convid, "token:", jwt)
+    if (jwt.sub !== userid || jwt.app_id !== appid) {
         res.status(401).end()
         return
     }
@@ -156,14 +156,14 @@ app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) =
             success: false,
             err: err.message()
         }
-        res.status(200).send(reply)
+        res.status(500).send(reply)
       }
       else {
         const reply = {
           success: true,
           result: messages
         }
-        // console.log("REPLY:", reply)
+        // winston.debug("REPLY:", reply)
         res.status(200).json(reply)
       }
     })
@@ -171,7 +171,7 @@ app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) =
 
 /** Delete a conversation */
 app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
-  console.log('delete: Conversation. req.params:', req.params, 'req.body:', req.body)
+  winston.debug('delete: Conversation. req.params:', req.params, 'req.body:', req.body)
 
   if (!req.params.recipient_id) {
     res.status(405).send('recipient_id is not present!');
@@ -186,15 +186,15 @@ app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
   
   let user_id = req.user.uid;
   const im_admin = req.user.roles.admin
-  console.log("im_admin?", im_admin, "roles:", req.user.roles)
+  winston.debug("im_admin?", im_admin, "roles:", req.user.roles)
   if (req.body.user_id && im_admin) {
-    console.log('user_id from body:', req.body.user_id);
+    winston.debug('user_id from body:', req.body.user_id);
     user_id = req.body.user_id;
   }
 
-  // console.log('recipient_id:', recipient_id);
-  // console.log('app_id:', app_id);
-  console.log('user_id:', user_id);
+  // winston.debug('recipient_id:', recipient_id);
+  // winston.debug('app_id:', app_id);
+  winston.debug('user_id:', user_id);
 
   chatapi.archiveConversation(app_id, user_id, recipient_id, function(err) {
     if (err) {
@@ -206,7 +206,7 @@ app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
   })
 
   // chatApi.archiveConversation(user_id, recipient_id, app_id).then(function(result) {
-  //   console.log('result', result);
+  //   winston.debug('result', result);
   //   res.status(204).send({"success":true});
   // });
 });
@@ -217,7 +217,7 @@ app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
  * This endpoint supports CORS.
  */
 app.post(BASEURL + '/:app_id/messages', (req, res) => {
-  console.log('Sends a message:', JSON.stringify(req.body));
+  winston.debug('Sends a message:', JSON.stringify(req.body));
   if (!req.body.sender_fullname) {
       winston.error('Sender Fullname is mandatory');
       res.status(405).send('Sender Fullname is mandatory');
@@ -257,17 +257,17 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
   let type = req.body.type;
   let metadata = req.body.metadata;
   let timestamp = req.body.timestamp;
-  console.log('sender_id:', sender_id);
-  // console.log('sender_fullname', sender_fullname);
-  console.log('recipient_id:', recipient_id);
-  // console.log('recipient_fullname', recipient_fullname);
-  console.log('text:', text);
-  // console.log('app_id', appid);
-  console.log('channel_type:', channel_type);
-  // console.log('attributes', attributes);
-  // console.log('type', type);
-  // console.log('metadata', metadata);
-  // console.log('timestamp', timestamp);
+  winston.debug('sender_id:', sender_id);
+  // winston.debug('sender_fullname', sender_fullname);
+  winston.debug('recipient_id:', recipient_id);
+  // winston.debug('recipient_fullname', recipient_fullname);
+  winston.debug('text:', text);
+  // winston.debug('app_id', appid);
+  winston.debug('channel_type:', channel_type);
+  // winston.debug('attributes', attributes);
+  // winston.debug('type', type);
+  // winston.debug('metadata', metadata);
+  // winston.debug('timestamp', timestamp);
   chatapi.sendMessage(
     appid, // mandatory
     type, // optional | text
@@ -281,7 +281,7 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
     attributes, // optional | null
     metadata, // optional | null
     function(err) { // optional | null
-      console.log("message sent with err", err)
+      winston.debug("message sent with err", err)
       if (err) {
         const reply = {
           success: false,
@@ -303,7 +303,7 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
 /** Create a group */
 app.post(BASEURL + '/:appid/groups', (req, res) => {
 
-  console.log("appId:", req.user.appId, "user:", req.user.uid)
+  winston.debug("appId:", req.user.appId, "user:", req.user.uid)
   if (!req.user || !req.user.appId) {
     res.status(401).end()
     return
@@ -342,11 +342,11 @@ app.post(BASEURL + '/:appid/groups', (req, res) => {
 
     let appid = req.user.appId;
 
-    console.log('group_name', group_name);
-    console.log('group_id', group_id);
-    console.log('group_owner', group_owner);
-    console.log('group_members', group_members);
-    console.log('app_id', appid);
+    winston.debug('group_name', group_name);
+    winston.debug('group_id', group_id);
+    winston.debug('group_owner', group_owner);
+    winston.debug('group_members', group_members);
+    winston.debug('app_id', appid);
 
     const now = Date.now()
     var group = {};
@@ -359,13 +359,13 @@ app.post(BASEURL + '/:appid/groups', (req, res) => {
     if (group_attributes) {
         group.attributes = group_attributes;
     }
-    console.log("creating group " + JSON.stringify(group));
+    winston.debug("creating group " + JSON.stringify(group));
     chatapi.createGroup(appid, group, function(err) {
       if (err) {
         res.status(500).send({"success":false, "err": err});
       }
       else {
-        res.status(201).send({"success":true});
+        res.status(201).send({"success":true, group: group});
       }
     })
 });
@@ -377,9 +377,9 @@ function newGroupId() {
 
 /** Get group data */
 app.get(BASEURL + '/:appid/groups/:group_id', (req, res) => {
-  console.log("getting /:appid/groups/group_id")
+  winston.debug("getting /:appid/groups/group_id")
   if (!authorize(req, res)) {
-    console.log("Unauthorized!")
+    winston.debug("Unauthorized!")
     return
   }
   const group_id = req.params.group_id
@@ -392,11 +392,11 @@ app.get(BASEURL + '/:appid/groups/:group_id', (req, res) => {
       res.status(404).send(reply)
     }
     else if (group) {
-      // console.log("group members", group.members)
+      // winston.debug("group members", group.members)
       im_member = group.members[req.user.uid]
       im_admin = req.user.roles.admin
-      // console.log("im_member:", im_member)
-      // console.log("im_admin:", im_admin)
+      // winston.debug("im_member:", im_member)
+      // winston.debug("im_admin:", im_admin)
       if (im_member || im_admin) {
         const reply = {
           success: true,
@@ -424,9 +424,9 @@ app.get(BASEURL + '/:appid/groups/:group_id', (req, res) => {
 
 /** Join a group */
 app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
-  console.log('adds a member to a group', req.body, req.params);
+  winston.debug('adds a member to a group', req.body, req.params);
   if (!authorize(req, res)) {
-    console.log("Unauthorized")
+    winston.debug("Unauthorized")
     res.status(401).send('Unauthorized');
     return
   }
@@ -436,10 +436,10 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
   }
   const joined_member_id = req.body.member_id;
   const group_id = req.params.group_id;
-  console.log('joined_member_id', joined_member_id);
-  console.log('group_id', group_id);
+  winston.debug('joined_member_id', joined_member_id);
+  winston.debug('group_id', group_id);
   chatapi.addMemberToGroupAndNotifyUpdate(req.user, joined_member_id, group_id, function(reply, group) {
-    console.log("THE GROUP:", group)
+    winston.debug("THE GROUP:", group)
     if (group) {
       chatapi.joinGroup(joined_member_id, group, function(err) {
         if (err) {
@@ -455,14 +455,14 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
       })
     }
     else {
-      console.log("Error encountered:", reply)
+      winston.debug("Error encountered:", reply)
     }
   })
 });
 
 /** Set members of a group */
 app.put(BASEURL + '/:app_id/groups/:group_id/members', (req, res) => {
-  console.log('Set members of a group with:', req.body);
+  winston.debug('Set members of a group with:', req.body);
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
@@ -479,7 +479,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/members', (req, res) => {
   // req.body.members.forEach(m => {
   //   new_members[m] = 1
   // })
-  // console.log("new_members:", new_members)
+  // winston.debug("new_members:", new_members)
   const group_id = req.params.group_id
   const user = req.user
   chatapi.setGroupMembers(user, new_members, group_id, function(err) {
@@ -495,7 +495,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/members', (req, res) => {
 /** Leave a group */
 app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', (req, res) => {
   // app.delete('/groups/:group_id/members/:member_id', (req, res) => {
-  console.log('Leave group');
+  winston.debug('Leave group');
   if (!req.params.member_id) {
       res.status(405).send('member_id is mandatory');
       return
@@ -512,10 +512,10 @@ app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', (req, res) 
   let group_id = req.params.group_id;
   let app_id = req.params.app_id;
   const user = req.user
-  console.log('member_id:', member_id);
-  console.log('group_id:', group_id);
-  console.log('app_id:', app_id);
-  console.log('user:', user.uid);
+  winston.debug('member_id:', member_id);
+  winston.debug('group_id:', group_id);
+  winston.debug('app_id:', app_id);
+  winston.debug('user:', user.uid);
   chatapi.leaveGroup(user, member_id, group_id, app_id, function(err) {
     if (err) {
       res.status(405).send(err)
@@ -528,7 +528,7 @@ app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', (req, res) 
 
 /** Update group (just group name) */
 app.put(BASEURL + '/:app_id/groups/:group_id', (req, res) => {
-  console.log('Update group (just group name)');
+  winston.debug('Update group (just group name)');
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
@@ -556,7 +556,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id', (req, res) => {
 
 /** Update group custom attributes */
 app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
-  console.log('Update group custom attributes for group:', req.params.group_id, "body:", JSON.stringify(req.body));
+  winston.debug('Update group custom attributes for group:', req.params.group_id, "body:", JSON.stringify(req.body));
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
@@ -587,7 +587,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
 // ********************************************************
 
 function decodejwt(req) {
-    // console.log(req.headers)
+    // winston.debug(req.headers)
     var token = null;
     if (req.headers["authorization"]) {
       token = req.headers["authorization"]
@@ -604,12 +604,12 @@ function decodejwt(req) {
     else {
       return null;
     }
-    // console.log("token:", token)
+    // winston.debug("token:", token)
     var decoded = null
     try {
         decoded = jwt.verify(token, jwtKey);
     } catch(err) {
-        console.log("err", err)
+        winston.debug("err", err)
     }
     return decoded
 }
@@ -620,7 +620,7 @@ function decodejwt(req) {
 
 async function startServer() {
 
-  console.log("connecting to mongodb...")
+  winston.debug("connecting to mongodb...")
 
   const mongouri = process.env.MONGODB_URI || "mongodb://localhost:27017/chatdb";
   // var ObjectID = mongodb.ObjectID;
@@ -629,14 +629,14 @@ async function startServer() {
   var db;
 
   var client = await mongodb.MongoClient.connect(mongouri, { useNewUrlParser: true, useUnifiedTopology: true })
-  console.log("mongodb connected...", db)
+  winston.debug("mongodb connected...", db)
 
   db = client.db();
   chatdb = new ChatDB({database: db})
   
   chatapi = new Chat21Api({exchange: 'amq.topic', database: chatdb});
   var amqpConnection = await chatapi.start();  
-  console.log("[AMQP] connected.", amqpConnection);
+  winston.debug("[AMQP] connected.", amqpConnection);
 
 
 }

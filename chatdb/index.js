@@ -1,3 +1,5 @@
+const winston = require("../winston");
+
 /* 
     ver 0.1.2
     Andrea Sponziello - (c) Tiledesk.com
@@ -36,9 +38,9 @@ class ChatDB {
   }
 
   saveOrUpdateMessage(message, callback) {
-    console.log("saving message...", message)
+    winston.debug("saving message...", message)
     this.db.collection(this.messages_collection).updateOne({timelineOf: message.timelineOf, message_id: message.message_id}, { $set: message }, { upsert: true }, function(err, doc) {
-      console.log("error...", err)
+      winston.debug("error...", err)
       if (err) {
         if (callback) {
           callback(err, null)
@@ -53,7 +55,7 @@ class ChatDB {
   }
 
   saveOrUpdateConversation(conversation, callback) {
-    console.log("saving conversation...", conversation)
+    winston.debug("saving conversation...", conversation)
     this.db.collection(this.conversations_collection).updateOne({timelineOf: conversation.timelineOf, conversWith: conversation.conversWith}, { $set: conversation}, { upsert: true }, function(err, doc) {
       if (err) {
         if (callback) {
@@ -69,7 +71,7 @@ class ChatDB {
   }
 
   saveOrUpdateGroup(group, callback) {
-    // console.log("saving group...", group)
+    // winston.debug("saving group...", group)
     this.db.collection(this.groups_collection).updateOne( { uid: group.uid }, { $set: group }, { upsert: true }, function(err, doc) {
       if (callback) {
         callback(err)
@@ -98,7 +100,7 @@ class ChatDB {
   }
 
   joinGroup(group_id, member_id, callback) {
-    console.log("joining group...", group_id, member_id)
+    winston.debug("joining group...", group_id, member_id)
     const member_field = "members." + member_id
     const now = Date.now()
     const set_command = {
@@ -126,7 +128,7 @@ class ChatDB {
 //  )
 
   lastConversations(appid, userid, archived, callback) {
-    console.log("DB. app:", appid, "user:", userid, "archived:", archived)
+    winston.info("DB. app: "+ appid+ " user: " + userid + " archived: "+ archived)
     this.db.collection(this.conversations_collection).find( { timelineOf: userid, app_id: appid, archived: archived } ).limit(200).sort( { timestamp: -1 } ).toArray(function(err, docs) {
       if (err) {
         if (callback) {
@@ -142,7 +144,7 @@ class ChatDB {
   }
 
   lastMessages(appid, userid, convid, sort, limit, callback) {
-    console.log("DB. app:", appid, "user:", userid, "convid", convid)
+    winston.debug("DB. app:", appid, "user:", userid, "convid", convid)
     this.db.collection(this.messages_collection).find( { timelineOf: userid, app_id: appid, conversWith: convid } ).limit(limit).sort( { timestamp: sort } ).toArray(function(err, docs) {
       if (err) {
         if (callback) {
