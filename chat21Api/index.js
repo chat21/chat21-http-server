@@ -70,7 +70,7 @@ class Chat21Api {
     addMemberToGroupAndNotifyUpdate(user, joined_member_id, group_id, callback) {
         this.chatdb.getGroup(group_id, (err, group) => {
           if (err || !group) {
-            winston.debug("group found? with err", err)
+            winston.error("group found? with err", err)
             const reply = {
                 success: false,
                 err: (err && err.message()) ? err.message() : "Not found",
@@ -103,7 +103,7 @@ class Chat21Api {
               group.members[joined_member_id] = 1
               this.chatdb.joinGroup(group_id, joined_member_id, (err) => {
                 if (err) {
-                  winston.debug("An error occurred:", err)
+                  winston.error("An error occurred:", err)
                   const reply = {
                       success: false,
                       err: err.message() ? err.message() : "Error joining group",
@@ -216,7 +216,7 @@ class Chat21Api {
             let convers_with = group.uid
             this.deliverMessage(appid, message, inbox_of, convers_with, (err) => {
                 if (err) {
-                    winston.debug("error delivering message to joined member", inbox_of)
+                    winston.error("error delivering message to joined member", inbox_of)
                     callback(err)
                     return
                 }
@@ -230,11 +230,11 @@ class Chat21Api {
         const convid = group.uid
         this.chatdb.lastMessages(appid, userid, convid, 1, 200, (err, messages) => {
             if (err) {
-                winston.debug("Error", err)
+                winston.error("Error", err)
                 callback(err)
             }
             else if (!messages) {
-                winston.debug("No messages in group", group.uid)
+                winston.info("No messages in group", group.uid)
                 callback(null)
             }
             else {
@@ -246,7 +246,7 @@ class Chat21Api {
                     winston.debug("Message:", message.text)
                     this.deliverMessage(appid, message, inbox_of, convers_with, (err) => {
                         if (err) {
-                            winston.debug("error delivering message to joined member", inbox_of)
+                            winston.error("error delivering message to joined member", inbox_of)
                         }
                         else {
                             winston.debug("DELIVERED MESSAGE TO", inbox_of, "CONVERS_WITH", convers_with)
@@ -263,7 +263,7 @@ class Chat21Api {
         winston.debug("member:", removed_member_id, "will leave group:", group_id)
         this.chatdb.getGroup(group_id, (err, group) => {
             if (err || !group) {
-              winston.debug("group found? with err", err)
+              winston.error("group found? with err", err)
               const reply = {
                   success: false,
                   err: (err && err.message()) ? err.message() : "Not found",
@@ -290,7 +290,7 @@ class Chat21Api {
                 winston.debug("new members:", JSON.stringify(group.members))
                 this.chatdb.saveOrUpdateGroup(group, (err) => {
                     if (err) {
-                        winston.debug("An error occurred:", err)
+                        winston.error("An error occurred:", err)
                         const reply = {
                             success: false,
                             err: err.message() ? err.message() : "Error saving group"
@@ -342,7 +342,7 @@ class Chat21Api {
                             let convers_with = group.uid
                             this.deliverMessage(group.appId, message, inbox_of, convers_with, function(err) {
                                 if (err) {
-                                    winston.debug("error delivering message to member (about the left member)", inbox_of)
+                                    winston.error("error delivering message to member (about the left member)", inbox_of)
                                     callback(err)
                                     return
                                 }
@@ -383,7 +383,7 @@ class Chat21Api {
         this.publish(deliver_message_topic, Buffer.from(message_payload), function(err) {
             winston.debug("PUBLISH: DELIVER MESSAGE TO TOPIC:", deliver_message_topic)
             if (err) {
-                winston.debug("error delivering message to joined member on topic", deliver_message_topic)
+                winston.error("error delivering message to joined member on topic", deliver_message_topic)
                 if (callback) {
                     callback(err)
                     return
@@ -431,7 +431,7 @@ class Chat21Api {
       this.publish(dest_topic, Buffer.from(message_payload), function(err) {
         winston.debug("PUBLISHED: SENDING MESSAGE TO TOPIC:", dest_topic)
         if (err) {
-          winston.debug("error sending message", err, "On topic", dest_topic)
+          winston.erro("error sending message", err, "On topic", dest_topic)
           if (callback) {
             callback(err)
             return
@@ -444,7 +444,7 @@ class Chat21Api {
     setGroupMembers(user, new_members, group_id, callback) {
         this.chatdb.getGroup(group_id, (err, group) => {
             if (err || !group) {
-                winston.debug("group found? with err", err)
+                winston.error("group found? with err", err)
                 callback({err: {message: "Not found"}})
                 return
             }
@@ -461,7 +461,7 @@ class Chat21Api {
             group.updatedOn = now;
             this.chatdb.saveOrUpdateGroup(group, (err) => {
                 if (err) {
-                    winston.debug("An error occurred:", err)
+                    winston.error("An error occurred:", err)
                     const reply = {
                         success: false,
                         err: err.message() ? err.message() : "Error saving group"
@@ -491,7 +491,7 @@ class Chat21Api {
     updateGroupData(user, group_name, group_id, callback) {
         this.chatdb.getGroup(group_id, (err, group) => {
             if (err || !group) {
-                winston.debug("group found? with err", err)
+                winston.error("group found? with err", err)
                 callback({err: {message: "Not found"}})
                 return
             }
@@ -507,7 +507,7 @@ class Chat21Api {
             group.updatedOn = now;
             this.chatdb.saveOrUpdateGroup(group, (err) => {
                 if (err) {
-                    winston.debug("An error occurred:", err)
+                    winston.error("An error occurred:", err)
                     const reply = {
                         success: false,
                         err: err.message() ? err.message() : "Error saving group"
@@ -530,7 +530,7 @@ class Chat21Api {
     updateGroupAttributes(user, group_attributes, group_id, callback) {
         this.chatdb.getGroup(group_id, (err, group) => {
             if (err || !group) {
-                winston.debug("group found? with err", err)
+                winston.error("group found? with err", err)
                 callback({err: {message: "Not found"}})
                 return
             }
@@ -546,7 +546,7 @@ class Chat21Api {
             group.updatedOn = now;
             this.chatdb.saveOrUpdateGroup(group, (err) => {
                 if (err) {
-                    winston.debug("An error occurred:", err)
+                    winston.error("An error occurred:", err)
                     const reply = {
                         success: false,
                         err: err.message() ? err.message() : "Error saving group"
@@ -618,7 +618,7 @@ class Chat21Api {
                     console.error("[AMQP] channel error", err.message);
                 });
                 ch.on("close", function () {
-                    winston.debug("[AMQP] channel closed");
+                    winston.error("[AMQP] channel closed");
                 });
                 that.pubChannel = ch;
                 // winston.debug("this.offlinePubQueue.length",that.offlinePubQueue.length)
