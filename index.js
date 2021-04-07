@@ -280,9 +280,9 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
     recipient_fullname, // mandatory
     attributes, // optional | null
     metadata, // optional | null
-    function(err) { // optional | null
-      winston.debug("message sent with err", err)
+    function(err) { // optional | null      
       if (err) {
+        winston.error("message sent with err", err)
         const reply = {
           success: false,
           err: (err && err.message()) ? err.message() : "Not found"
