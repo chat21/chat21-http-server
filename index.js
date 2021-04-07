@@ -12,7 +12,7 @@ const { Chat21Api } = require('./chat21Api/index.js');
 // var amqpConn = null;
 // var exchange = 'amq.topic';
 
-const jwtKey = process.env.JWT_KEY
+const jwtKey = process.env.JWT_KEY || "tokenKey"
 const BASEURL = '/api'
 let chatdb = null
 let chatapi = null
