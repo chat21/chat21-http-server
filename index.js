@@ -257,13 +257,13 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
   let type = req.body.type;
   let metadata = req.body.metadata;
   let timestamp = req.body.timestamp;
-  winston.debug('sender_id:', sender_id);
+  winston.debug('sender_id:' + sender_id);
   // winston.debug('sender_fullname', sender_fullname);
-  winston.debug('recipient_id:', recipient_id);
+  winston.debug('recipient_id:' + recipient_id);
   // winston.debug('recipient_fullname', recipient_fullname);
-  winston.debug('text:', text);
+  winston.debug('text:'+ text);
   // winston.debug('app_id', appid);
-  winston.debug('channel_type:', channel_type);
+  winston.debug('channel_type:'+ channel_type);
   // winston.debug('attributes', attributes);
   // winston.debug('type', type);
   // winston.debug('metadata', metadata);
@@ -303,7 +303,7 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
 /** Create a group */
 app.post(BASEURL + '/:appid/groups', (req, res) => {
 
-  winston.debug("appId:", req.user.appId, "user:", req.user.uid)
+  winston.debug("appId:" + req.user.appId + "user:" + req.user.uid)
   if (!req.user || !req.user.appId) {
     res.status(401).end()
     return
@@ -342,11 +342,11 @@ app.post(BASEURL + '/:appid/groups', (req, res) => {
 
     let appid = req.user.appId;
 
-    winston.debug('group_name', group_name);
-    winston.debug('group_id', group_id);
-    winston.debug('group_owner', group_owner);
-    winston.debug('group_members', group_members);
-    winston.debug('app_id', appid);
+    winston.debug('group_name' + group_name);
+    winston.debug('group_id'+ group_id);
+    winston.debug('group_owner' + group_owner);
+    winston.debug('group_members' + group_members);
+    winston.debug('app_id' + appid);
 
     const now = Date.now()
     var group = {};
@@ -512,10 +512,10 @@ app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', (req, res) 
   let group_id = req.params.group_id;
   let app_id = req.params.app_id;
   const user = req.user
-  winston.debug('member_id:', member_id);
-  winston.debug('group_id:', group_id);
-  winston.debug('app_id:', app_id);
-  winston.debug('user:', user.uid);
+  winston.debug('member_id:'+ member_id);
+  winston.debug('group_id:' + group_id);
+  winston.debug('app_id:' + app_id);
+  winston.debug('user:' + user.uid);
   chatapi.leaveGroup(user, member_id, group_id, app_id, function(err) {
     if (err) {
       res.status(405).send(err)
@@ -556,7 +556,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id', (req, res) => {
 
 /** Update group custom attributes */
 app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
-  winston.debug('Update group custom attributes for group:', req.params.group_id, "body:", JSON.stringify(req.body));
+  winston.debug('Update group custom attributes for group:' + req.params.group_id + "body:" + JSON.stringify(req.body));
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
