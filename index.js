@@ -1,10 +1,10 @@
+require('dotenv').config();
 const express = require("express") // // //
 const bodyParser = require("body-parser")
 const winston = require("./winston");
 const jwt = require("jsonwebtoken")
 const { uuid } = require('uuidv4');
 var cors = require('cors');
-require('dotenv').config();
 var mongodb = require("mongodb");
 const { ChatDB } = require('./chatdb/index.js');
 const { Chat21Api } = require('./chat21Api/index.js');
