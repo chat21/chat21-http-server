@@ -55,16 +55,43 @@ class Chat21Api {
         // 1. create group json
         // 2. save group json in mongodb
         // 3. publish to /observer
-        // 4. observer publishes JSON to all members
+        // 4. observer publishes JSON to all members (task on the observer)
         // 5. observer (virtually) creates group 'timelineOf' messages (that's created on the first message sent by one member)
-        var create_group_topic = `apps.observer.${appid}.groups.create`
-        winston.debug("Publishing to topic: " + create_group_topic);
-        winston.debug(">>> NOW PUBLISHING... CREATE GROUP TOPIC: " + create_group_topic)
-        const group_payload = JSON.stringify(group)
-        this.publish(create_group_topic, Buffer.from(group_payload), function(err) {
-            winston.debug("PUBLISHED 'CREATE GROUP' ON TOPIC: " + create_group_topic)
-            callback(err)
-        });
+        this.saveOrUpdateGroup(group, (err) => { // 2. save group json in mongodb
+            if (err) {
+                console.error("Error while saving 'create group':", err);
+                callback(err);
+            }
+            else {
+                var create_group_topic = `apps.observer.${appid}.groups.create`
+                winston.debug("Publishing to topic: " + create_group_topic);
+                winston.debug(">>> NOW PUBLISHING... CREATE GROUP TOPIC: " + create_group_topic)
+                const group_payload = JSON.stringify(group)
+                this.publish(create_group_topic, Buffer.from(group_payload), function(err) { // 3. publish to /observer
+                    if (err) {
+                        console.error("Error while publishing 'create group':", err);
+                        callback(err);
+                    }
+                    else {
+                        winston.debug("PUBLISHED 'CREATE GROUP' ON TOPIC: " + create_group_topic);
+                        callback(null);
+                    }
+                });
+            }
+        })
+    }
+
+    saveOrUpdateGroup(group, callback) {
+        chatdb.saveOrUpdateGroup(group, function(err, doc) {
+          if (err) {
+            winston.error("Error saving group:", err);
+            callback(err);
+            return
+          }
+          else {
+            callback(null);
+          }
+        })
     }
 
     addMemberToGroupAndNotifyUpdate(user, joined_member_id, group_id, callback) {
