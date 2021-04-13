@@ -602,7 +602,7 @@ class Chat21Api {
     startMQ() {    
         const that = this;
         return new Promise(function (resolve, reject) {
-            winston.debug("Connecting to RabbitMQ...")
+            winston.info("Connecting to RabbitMQ: " + process.env.RABBITMQ_URI)
             amqp.connect(process.env.RABBITMQ_URI, (err, conn) => {
                 if (err) {
                     console.error("[AMQP]", err.message);                    
