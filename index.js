@@ -620,23 +620,24 @@ function decodejwt(req) {
 
 async function startServer() {
 
-  winston.debug("connecting to mongodb...")
 
   const mongouri = process.env.MONGODB_URI || "mongodb://localhost:27017/chatdb";
+  winston.info("connecting to mongodb: " + mongouri)
+
   // var ObjectID = mongodb.ObjectID;
   // Create a database variable outside of the
   // database connection callback to reuse the connection pool in the app.
   var db;
 
   var client = await mongodb.MongoClient.connect(mongouri, { useNewUrlParser: true, useUnifiedTopology: true })
-  winston.debug("mongodb connected...", db)
+  winston.info("mongodb connected...", db)
 
   db = client.db();
   chatdb = new ChatDB({database: db})
   
   chatapi = new Chat21Api({exchange: 'amq.topic', database: chatdb});
   var amqpConnection = await chatapi.start();  
-  winston.debug("[AMQP] connected.", amqpConnection);
+  winston.info("[AMQP] connected.", amqpConnection);
 
 
 }
