@@ -618,7 +618,7 @@ function decodejwt(req) {
 
 
 
-async function startServer() {
+async function startAMQP() {
 
 
   const mongouri = process.env.MONGODB_URI || "mongodb://localhost:27017/chatdb";
@@ -637,7 +637,7 @@ async function startServer() {
   
   chatapi = new Chat21Api({exchange: 'amq.topic', database: chatdb});
   var amqpConnection = await chatapi.start();  
-  winston.info("[AMQP] connected.", amqpConnection);
+  winston.info("[AMQP] connected.");
 
 
 }
@@ -646,4 +646,4 @@ async function startServer() {
 
 
 
-module.exports = {app: app, startServer: startServer};
+module.exports = {app: app, startAMQP: startAMQP};
