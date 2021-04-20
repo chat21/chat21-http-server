@@ -82,7 +82,7 @@ class Chat21Api {
     }
 
     saveOrUpdateGroup(group, callback) {
-        chatdb.saveOrUpdateGroup(group, function(err, doc) {
+        this.chatdb.saveOrUpdateGroup(group, function(err, doc) {
           if (err) {
             winston.error("Error saving group:", err);
             callback(err);
