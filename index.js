@@ -69,7 +69,6 @@ app.get("/verify", (req, res) => {
     res.status(200).send(decoded)
 })
 
-
 app.get(BASEURL + "/:appid/:userid/conversations", (req, res) => {
   winston.debug("getting /:appid/:userid/conversations")
   if (!authorize(req, res)) {
@@ -129,6 +128,39 @@ app.get(BASEURL + "/:appid/:userid/archived_conversations", (req, res) => {
     }
   })
 })
+
+app.get(BASEURL + "/:appid/:userid/conversations/:conversWith", (req, res) => {
+  winston.debug("GET /:appid/:userid/conversations/:conversWith");
+  if (!authorize(req, res)) {
+    return
+  }
+  conversationDetail(req, function(err, docs) {
+    if (err) {
+      const reply = {
+          success: false,
+          err: err.message()
+      }
+      res.status(501).send(reply)
+    }
+    else {
+      const reply = {
+        success: true,
+        result: docs
+      }
+      res.status(200).json(reply)
+    }
+  })
+})
+
+function conversationDetail(req, callback) {
+  // winston.debug("getting /:appid/:userid/archived_conversations")
+  const appid = req.params.appid
+  const userid = req.params.userid
+  const conversWith = req.params.conversWith
+  chatdb.conversationDetail(appid, userid, conversWith, function(err, docs) {
+    callback(err, docs);
+  });
+}
 
 function conversations(req, archived, callback) {
   // winston.debug("getting /:appid/:userid/archived_conversations")

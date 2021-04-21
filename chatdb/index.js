@@ -143,6 +143,22 @@ class ChatDB {
     });
   }
 
+  conversationDetail(appid, userid, conversWith, callback) {
+    winston.info("DB. app: "+ appid+ " user: " + userid + " conversWith: "+ conversWith);
+    this.db.collection(this.conversations_collection).find( { timelineOf: userid, app_id: appid, conversWith: conversWith } ).limit(1).toArray(function(err, docs) {
+      if (err) {
+        if (callback) {
+          callback(err, null)
+        }
+      }
+      else {
+        if (callback) {
+          callback(null, docs)
+        }
+      }
+    });
+  }
+
   lastMessages(appid, userid, convid, sort, limit, callback) {
     winston.debug("DB. app:", appid, "user:", userid, "convid", convid)
     this.db.collection(this.messages_collection).find( { timelineOf: userid, app_id: appid, conversWith: convid } ).limit(limit).sort( { timestamp: sort } ).toArray(function(err, docs) {
