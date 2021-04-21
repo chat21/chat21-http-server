@@ -464,6 +464,7 @@ class Chat21Api {
             return
           }
         }
+        winston.verbose("Message Sent to queue: " + JSON.stringify(outgoing_message) + " to "+ dest_topic);
         callback(null)
       });
     }
