@@ -95,6 +95,31 @@ app.get(BASEURL + "/:appid/:userid/conversations", (req, res) => {
   })
 })
 
+app.get(BASEURL + "/:appid/:userid/conversations/archived", (req, res) => {
+  winston.debug("getting /:appid/:userid/archived_conversations")
+  if (!authorize(req, res)) {
+    winston.debug("Unauthorized!")
+    return
+  }
+  conversations(req, true, function(err, docs) {
+    winston.debug("got arcived conversations", docs, err)
+    if (err) {
+      const reply = {
+          success: false,
+          err: err.message()
+      }
+      res.status(200).send(reply)
+    }
+    else {
+      const reply = {
+        success: true,
+        result: docs
+      }
+      res.status(200).json(reply)
+    }
+  })
+})
+
 function authorize(req, res) {
   const appid = req.params.appid
   // const userid = req.params.userid
