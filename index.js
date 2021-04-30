@@ -290,11 +290,11 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
       res.status(405).send('Recipient Fullname is mandatory');
       return
   }
-  else if (!req.body.text) {
-      winston.error('text is mandatory');
-      res.status(405).send('text is mandatory');
-      return
-  }
+  // else if (!req.body.text) {
+  //     winston.error('text is mandatory');
+  //     res.status(405).send('text is mandatory');
+  //     return
+  // }
   winston.debug('validation ok');
 
   let sender_id = req.user.uid;
