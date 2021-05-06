@@ -499,17 +499,27 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
   console.debug('group_id', group_id);
   // console.debug('chatapi', chatapi);
   chatapi.addMemberToGroupAndNotifyUpdate(req.user, joined_member_id, group_id, function(err, group) {
-    console.debug("THE GROUP:", group_id)
-    if (group) {
+    console.debug("THE GROUP:", group)
+    if (err) {
+      console.error("An error occurred", err)
+      const reply = {
+        success: false,
+        err: (err) ? err : "An error occurred",
+        http_status: 405
+      }
+      res.status(reply.http_status).send(reply)
+    }
+    else if (group) {
       console.debug("Notifying to other members and coping old group messages to new user timeline...")
       chatapi.joinGroup(joined_member_id, group, function(err) {
         console.debug("member joined. Notified to other members and copied old group messages to new user timeline")
         if (err) {
           const reply = {
             success: false,
-            err: (err && err.message()) ? err.message() : "An error occurred",
+            err: err ? err.message() : "An error occurred",
             http_status: 405
           }
+          res.status(reply.http_status).send(reply)
         }
         else {
           res.status(200).send({success: true})
@@ -517,8 +527,13 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
       })
     }
     else {
-      console.error("Error encountered:", reply)
-      res.status(200).send(reply);
+      const reply = {
+        success: false,
+        err: "Group not found",
+        http_status: 405
+      }
+      console.error("Error encountered:", reply);
+      res.status(reply.http_status).send(reply);
     }
   })
 });
