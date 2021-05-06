@@ -360,7 +360,7 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
 /** Create a group */
 app.post(BASEURL + '/:appid/groups', (req, res) => {
 
-  winston.debug("appId:" + req.user.appId + "user:" + req.user.uid)
+  console.debug("appId:" + req.user.appId + ", user:" + req.user.uid)
   if (!req.user || !req.user.appId) {
     res.status(401).end()
     return
@@ -408,7 +408,8 @@ app.post(BASEURL + '/:appid/groups', (req, res) => {
     const now = Date.now()
     var group = {};
     group.name = group_name;
-    group.uid = group_id
+    group.uid = group_id;
+    group.appId = appid;
     group.owner = group_owner;
     group.members = group_members;
     group.createdOn = now;
@@ -417,7 +418,7 @@ app.post(BASEURL + '/:appid/groups', (req, res) => {
         group.attributes = group_attributes;
     }
     winston.debug("creating group " + JSON.stringify(group));
-    chatapi.createGroup(appid, group, function(err) {
+    chatapi.createGroup(group, function(err) {
       if (err) {
         res.status(500).send({"success":false, "err": err});
       }
@@ -434,7 +435,7 @@ function newGroupId() {
 
 /** Get group data */
 app.get(BASEURL + '/:appid/groups/:group_id', (req, res) => {
-  winston.debug("getting /:appid/groups/group_id")
+  console.debug("getting /:appid/groups/group_id")
   if (!authorize(req, res)) {
     winston.debug("Unauthorized!")
     return
@@ -481,9 +482,9 @@ app.get(BASEURL + '/:appid/groups/:group_id', (req, res) => {
 
 /** Join a group */
 app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
-  winston.debug('adds a member to a group', req.body, req.params);
+  console.debug('adds a member to a group', req.body, req.params);
   if (!authorize(req, res)) {
-    winston.debug("Unauthorized")
+    console.debug("Unauthorized")
     res.status(401).send('Unauthorized');
     return
   }
@@ -493,12 +494,16 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
   }
   const joined_member_id = req.body.member_id;
   const group_id = req.params.group_id;
-  winston.debug('joined_member_id', joined_member_id);
-  winston.debug('group_id', group_id);
-  chatapi.addMemberToGroupAndNotifyUpdate(req.user, joined_member_id, group_id, function(reply, group) {
-    winston.debug("THE GROUP:", group)
+  // const app_id = req.params.appid;
+  console.debug('joined_member_id', joined_member_id);
+  console.debug('group_id', group_id);
+  // console.debug('chatapi', chatapi);
+  chatapi.addMemberToGroupAndNotifyUpdate(req.user, joined_member_id, group_id, function(err, group) {
+    console.debug("THE GROUP:", group_id)
     if (group) {
+      console.debug("Notifying to other members and coping old group messages to new user timeline...")
       chatapi.joinGroup(joined_member_id, group, function(err) {
+        console.debug("member joined. Notified to other members and copied old group messages to new user timeline")
         if (err) {
           const reply = {
             success: false,
@@ -512,7 +517,8 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
       })
     }
     else {
-      winston.debug("Error encountered:", reply)
+      console.error("Error encountered:", reply)
+      res.status(200).send(reply);
     }
   })
 });
