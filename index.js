@@ -102,7 +102,7 @@ app.get(BASEURL + "/:appid/:userid/conversations/archived", (req, res) => {
     return
   }
   conversations(req, true, function(err, docs) {
-    winston.debug("got arcived conversations", docs, err)
+    winston.debug("got archived conversations", docs, err)
     if (err) {
       const reply = {
           success: false,
