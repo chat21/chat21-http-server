@@ -191,7 +191,7 @@ class Chat21Api {
         var update_group_topic = `apps.observer.${group.appId}.groups.update`
         console.debug("updating group to " + update_group_topic);
         const data = {
-          payload: group,
+          group: group,
           notify_to: users_to_be_notified //{...new_members, ...old_members }
         }
         const group_payload = JSON.stringify(data)
