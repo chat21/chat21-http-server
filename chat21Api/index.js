@@ -51,7 +51,7 @@ class Chat21Api {
     }
 
     // REFACTOR AS SET MEMBERS
-    createGroup(appid, group, callback) {
+    createGroup(group, callback) {
         // 1. create group json
         // 2. save group json in mongodb
         // 3. publish to /observer
@@ -63,7 +63,7 @@ class Chat21Api {
                 callback(err);
             }
             else {
-                var create_group_topic = `apps.observer.${appid}.groups.create`
+                var create_group_topic = `apps.observer.${group.appId}.groups.create`
                 winston.debug("Publishing to topic: " + create_group_topic);
                 winston.debug(">>> NOW PUBLISHING... CREATE GROUP TOPIC: " + create_group_topic)
                 const group_payload = JSON.stringify(group)
@@ -95,7 +95,9 @@ class Chat21Api {
     }
 
     addMemberToGroupAndNotifyUpdate(user, joined_member_id, group_id, callback) {
+        console.debug("addMemberToGroupAndNotifyUpdate()")
         this.chatdb.getGroup(group_id, (err, group) => {
+          console.debug("found group", group)
           if (err || !group) {
             winston.error("group found? with err", err)
             const reply = {
@@ -109,13 +111,15 @@ class Chat21Api {
             }
           }
           else {
-            // winston.debug("group members", group.members)
-            // winston.debug("group owner", group.owner)
+            //group.appId = app_id;
+            console.debug("actual group members", group.members)
+            console.debug("actual group owner", group.owner)
             const im_owner = (group.owner === user.uid)
             const im_admin = user.roles.admin
-            winston.debug("im_owner: " + im_owner)
-            winston.debug("im_admin: " + im_admin)
+            console.debug("im_owner: " + im_owner)
+            console.debug("im_admin: " + im_admin)
             if (im_admin || im_owner) {
+              console.debug("adding member", joined_member_id)
               if (group.members[joined_member_id]) {
                 const reply = {
                   success: false,
@@ -128,6 +132,7 @@ class Chat21Api {
                 return
               }
               group.members[joined_member_id] = 1
+              console.debug("new members to add", group.members)
               this.chatdb.joinGroup(group_id, joined_member_id, (err) => {
                 if (err) {
                   winston.error("An error occurred:", err)
@@ -136,15 +141,14 @@ class Chat21Api {
                       err: err.message() ? err.message() : "Error joining group",
                       http_status: 500
                   }
-                  // res.status(500).send(reply)
                   if (callback) {
                     callback(reply, null)
                   }
                 }
                 else {
-                  winston.debug("group updated with new joined member.")
+                  console.debug("group updated with new joined member.")
                   this.notifyGroupUpdate(group, group.members, (err) => {
-                    winston.debug("PUBLISHED 'UPDATE GROUP'")
+                    console.debug("PUBLISHED 'UPDATE GROUP'")
                     if (err) {
                       if (callback) {
                         callback({"success":false, "err": err, http_status: 500}, null)
@@ -159,7 +163,7 @@ class Chat21Api {
                           },
                           group // SUCCESS!!!!
                         )
-                        winston.debug("GROUP IS", group)
+                        console.debug("GROUP IS", group)
                       }
                     }
                   });
@@ -185,15 +189,15 @@ class Chat21Api {
      */
     notifyGroupUpdate(group, users_to_be_notified, callback) {
         var update_group_topic = `apps.observer.${group.appId}.groups.update`
-        winston.debug("updating group to " + update_group_topic);
+        console.debug("updating group to " + update_group_topic);
         const data = {
           payload: group,
           notify_to: users_to_be_notified //{...new_members, ...old_members }
         }
         const group_payload = JSON.stringify(data)
-        // winston.debug("payload:", group_payload)
+        console.debug("payload:", group_payload)
         this.publish(update_group_topic, Buffer.from(group_payload), (err) => {
-          winston.debug("PUBLISHED 'UPDATE GROUP' ON TOPIC: " + update_group_topic)
+          console.debug("PUBLISHED 'UPDATE GROUP' ON TOPIC: " + update_group_topic)
           callback(err)
         })
     }
@@ -210,10 +214,10 @@ class Chat21Api {
      * @param {*} callback 
      */
     joinGroup(joined_member_id, group, callback) {
-        winston.debug("SENDING 'ADDED TO GROUP' TO EACH MEMBER INCLUDING THE JOINED ONE (group:" +  group.uid + ") - members: " + JSON.stringify(group.members))
+        console.debug("SENDING 'ADDED TO GROUP' TO EACH MEMBER INCLUDING THE JOINED ONE (group:" +  group.uid + ") - members: " + JSON.stringify(group.members))
         const appid = group.appId
         for (let [member_id, value] of Object.entries(group.members)) {
-            winston.debug("to member: " + member_id)
+            console.debug("to member: " + member_id)
             const now = Date.now()
             const message = {
                 message_id: uuid(),
@@ -238,45 +242,47 @@ class Chat21Api {
                     }
                 }
             }
-            winston.debug("Member joined group message: " + JSON.stringify(message))
+            console.debug("Member joined group message: " + JSON.stringify(message))
             let inbox_of = member_id
             let convers_with = group.uid
             this.deliverMessage(appid, message, inbox_of, convers_with, (err) => {
                 if (err) {
-                    winston.error("error delivering message to joined member", inbox_of)
+                    console.error("error delivering message to joined member", inbox_of)
                     callback(err)
                     return
                 }
                 else {
-                    winston.debug("DELIVERED MESSAGE TO: " + inbox_of + " CONVERS_WITH: " + convers_with)
+                    console.debug("DELIVERED MESSAGE TO: " + inbox_of + " CONVERS_WITH: " + convers_with)
                 }
             })
         }
         // 2. pubblish old group messages to the joined member (in the member/group-conversWith timeline)
         const userid = group.uid
         const convid = group.uid
+        console.debug("last messages for appid, userid, convid", appid, userid, convid);
         this.chatdb.lastMessages(appid, userid, convid, 1, 200, (err, messages) => {
+            console.debug("messages:", messages)
             if (err) {
-                winston.error("Error", err)
+                console.error("Error", err)
                 callback(err)
             }
             else if (!messages) {
-                winston.info("No messages in group: " + group.uid)
+                console.info("No messages in group: " + group.uid)
                 callback(null)
             }
             else {
-                winston.debug("delivering old group messages to: " + joined_member_id)
+                console.debug("delivering old group messages to: " + joined_member_id)
                 const inbox_of = joined_member_id
                 const convers_with = group.uid
                 messages.forEach(message => {
                     // TODO: CHECK IN MESSAGE WAS ALREADY DELIVERED. (CLIENT? SERVER?)
-                    winston.debug("Message: " + message.text)
+                    console.debug("Message: " + message.text)
                     this.deliverMessage(appid, message, inbox_of, convers_with, (err) => {
                         if (err) {
-                            winston.error("error delivering message to joined member", inbox_of)
+                            console.error("error delivering message to joined member", inbox_of)
                         }
                         else {
-                            winston.debug("DELIVERED MESSAGE TO: " + inbox_of +  " CONVERS_WITH " + convers_with)
+                            console.debug("DELIVERED MESSAGE TO: " + inbox_of +  " CONVERS_WITH " + convers_with)
                         }
                     })
                 });
@@ -287,10 +293,10 @@ class Chat21Api {
 
     leaveGroup(user, removed_member_id, group_id, app_id, callback) {
         // get group by id
-        winston.debug("member: " + removed_member_id + " will leave group: " + group_id)
+        console.debug("member: " + removed_member_id + " will leave group: " + group_id)
         this.chatdb.getGroup(group_id, (err, group) => {
             if (err || !group) {
-              winston.error("group found? with err", err)
+              console.error("group found? with err", err)
               const reply = {
                   success: false,
                   err: (err && err.message()) ? err.message() : "Not found",
@@ -301,23 +307,23 @@ class Chat21Api {
               }
             }
             else {
-              winston.debug("group found.")
-              winston.debug("actual group members: " + JSON.stringify(group.members))
-              winston.debug("group owner: " + JSON.stringify(group.owner))
+              console.debug("group found.")
+              console.debug("actual group members: " + JSON.stringify(group.members))
+              console.debug("group owner: " + JSON.stringify(group.owner))
               const im_owner = (group.owner === user.uid)
               const im_admin = user.roles.admin
               const im_member = group.members[user.uid]
               const member_exists = group.members[removed_member_id]
-              winston.debug("im_owner: " +im_owner)
-              winston.debug("im_admin: " + im_admin)
+              console.debug("im_owner: " +im_owner)
+              console.debug("im_admin: " + im_admin)
               if ((im_admin || im_owner || im_member) && member_exists) {
                 let old_members = {...group.members};
                 delete group.members[removed_member_id]
-                winston.debug("old members: " + JSON.stringify(old_members))
-                winston.debug("new members: " + JSON.stringify(group.members))
+                console.debug("old members: " + JSON.stringify(old_members))
+                console.debug("new members: " + JSON.stringify(group.members))
                 this.chatdb.saveOrUpdateGroup(group, (err) => {
                     if (err) {
-                        winston.error("An error occurred:", err)
+                        console.error("An error occurred:", err)
                         const reply = {
                             success: false,
                             err: err.message() ? err.message() : "Error saving group"
@@ -325,8 +331,8 @@ class Chat21Api {
                         callback(reply)
                         return
                     }
-                    winston.debug("....saved group with leaved member. " + JSON.stringify(group))
-                    winston.debug("... notify to old members " +old_members + " the new group")
+                    console.debug("....saved group with leaved member. " + JSON.stringify(group))
+                    console.debug("... notify to old members " +old_members + " the new group")
                     this.notifyGroupUpdate(group, old_members, (err) => { // TO OLD MEMBERS
                         if (err) {
                             if (callback) {
@@ -339,7 +345,7 @@ class Chat21Api {
                         }
                         // old_members.sendMessage("member_id leaved the group")
                         for (let [member_id, value] of Object.entries(old_members)) {
-                            winston.debug("to member: " + member_id)
+                            console.debug("to member: " + member_id)
                             const now = Date.now()
                             const message = {
                                 message_id: uuid(),
@@ -364,17 +370,17 @@ class Chat21Api {
                                     }
                                 }
                             }
-                            winston.debug("Member left group message: " + JSON.stringify(message))
+                            console.debug("Member left group message: " + JSON.stringify(message))
                             let inbox_of = member_id
                             let convers_with = group.uid
                             this.deliverMessage(group.appId, message, inbox_of, convers_with, function(err) {
                                 if (err) {
-                                    winston.error("error delivering message to member (about the left member)", inbox_of)
+                                    console.error("error delivering message to member (about the left member)", inbox_of)
                                     callback(err)
                                     return
                                 }
                                 else {
-                                    winston.debug("DELIVERED MESSAGE TO: " + inbox_of + " CONVERS_WITH " + convers_with)
+                                    console.debug("DELIVERED MESSAGE TO: " + inbox_of + " CONVERS_WITH " + convers_with)
                                 }
                             })
                         }
@@ -729,4 +735,3 @@ class Chat21Api {
   }
   
   module.exports = { Chat21Api };
-  
