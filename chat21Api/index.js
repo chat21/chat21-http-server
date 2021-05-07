@@ -294,7 +294,8 @@ class Chat21Api {
                             }
                         }
                         else {
-                            console.debug("DELIVERED MESSAGE TO: " + inbox_of +  " CONVERS_WITH " + convers_with)
+                            // QUI NON ARRIVA IN LOCALE????
+                            console.debug("DELIVERED MESSAGE TO: " + inbox_of +  " __CONVERS_WITH__ " + convers_with_group)
                         }
                     })
                 });
