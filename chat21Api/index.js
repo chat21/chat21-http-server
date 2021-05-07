@@ -247,7 +247,7 @@ class Chat21Api {
             let convers_with = group.uid
             this.deliverMessage(appid, message, inbox_of, convers_with, (err) => {
                 if (err) {
-                    console.error("error delivering message to joined member", inbox_of)
+                    console.error("Error delivering message to joined member", inbox_of)
                     if (callback) {
                         callback(err)
                     }
@@ -258,46 +258,49 @@ class Chat21Api {
                 }
             })
         }
-        // // 2. pubblish old group messages to the joined member (in the member/group-conversWith timeline)
-        // const userid = group.uid
-        // const convid = group.uid
-        // console.debug("last messages for appid, userid, convid", appid, userid, convid);
+
+        // 2. pubblish old group messages to the joined member (in the member/group-conversWith timeline)
+        //const userid = group.uid
+        const group_id = group.uid
+        console.debug("last messages for appid, userid, convid", appid, userid, convid);
         // this.chatdb.lastMessages(appid, userid, convid, 1, 200, (err, messages) => {
-        //     console.debug("messages:", messages)
-        //     if (err) {
-        //         console.error("Error", err)
-        //         if (callback) {
-        //             callback(err)
-        //         }
-        //     }
-        //     else if (!messages) {
-        //         console.info("No messages in group: " + group.uid)
-        //         if (callback) {
-        //             callback(null)
-        //         }
-        //     }
-        //     else {
-        //         console.debug("delivering old group messages to: " + joined_member_id)
-        //         const inbox_of = joined_member_id
-        //         const convers_with = group.uid
-        //         messages.forEach(message => {
-        //             // TODO: CHECK IN MESSAGE WAS ALREADY DELIVERED. (CLIENT? SERVER?)
-        //             console.debug("Delivering message: " + message.text)
-        //             this.deliverMessage(appid, message, inbox_of, convers_with, (err) => {
-        //                 if (err) {
-        //                     console.error("error delivering message to joined member", inbox_of)
-        //                     if (callback) {
-        //                         callback(err)
-        //                     }
-        //                 }
-        //                 else {
-        //                     console.debug("DELIVERED MESSAGE TO: " + inbox_of +  " CONVERS_WITH " + convers_with)
-        //                 }
-        //             })
-        //         });
-        //         callback(null)
-        //     }
-        // })
+        this.chatdb.lastMessages(appid, group_id, group_id, 1, 200, (err, messages) => {
+            console.debug("lastMessages error:", messages)
+            if (err) {
+                console.error("Error", err)
+                if (callback) {
+                    callback(err)
+                }
+            }
+            else if (!messages) {
+                console.info("No messages in group: " + group_id)
+                if (callback) {
+                    callback(null)
+                }
+            }
+            else {
+                console.debug("delivering old group messages to: " + joined_member_id)
+                const inbox_of = joined_member_id
+                const convers_with_group = group_id
+                messages.forEach(message => {
+                    // TODO: CHECK IN MESSAGE WAS ALREADY DELIVERED. (CLIENT? SERVER?)
+                    message["__history"] = "true"
+                    console.debug("Delivering message: " + message.text)
+                    this.deliverMessage(appid, message, inbox_of, convers_with_group, (err) => {
+                        if (err) {
+                            console.error("error delivering message to joined member", inbox_of)
+                            if (callback) {
+                                callback(err)
+                            }
+                        }
+                        else {
+                            console.debug("DELIVERED MESSAGE TO: " + inbox_of +  " CONVERS_WITH " + convers_with)
+                        }
+                    })
+                });
+                callback(null)
+            }
+        })
     }
 
     leaveGroup(user, removed_member_id, group_id, app_id, callback) {
