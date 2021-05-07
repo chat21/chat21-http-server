@@ -262,7 +262,7 @@ class Chat21Api {
         // 2. pubblish old group messages to the joined member (in the member/group-conversWith timeline)
         //const userid = group.uid
         const group_id = group.uid
-        console.debug("last messages for appid, userid, convid", appid, userid, convid);
+        console.debug("last messages for appid, userid, convid", appid, group_id, group_id);
         // this.chatdb.lastMessages(appid, userid, convid, 1, 200, (err, messages) => {
         this.chatdb.lastMessages(appid, group_id, group_id, 1, 200, (err, messages) => {
             console.debug("lastMessages error:", messages)
