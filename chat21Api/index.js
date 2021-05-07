@@ -261,16 +261,13 @@ class Chat21Api {
 
         // 2. pubblish old group messages to the joined member (in the member/group-conversWith timeline)
         //const userid = group.uid
-        const group_id = group.uid
+        // const group_id = 'support-group-6066e60cc3dade4e7389d182-5be10e01-7acc-4135-bbcd-c514f9cc3f8a'
+        const group_id = group.uid;
         console.debug("last messages for appid, userid, convid", appid, group_id, group_id);
         // this.chatdb.lastMessages(appid, userid, convid, 1, 200, (err, messages) => {
         this.chatdb.lastMessages(appid, group_id, group_id, 1, 200, (err, messages) => {
-            // messages = JSON.parse('[{"_id":"609558666cf52d8165c75dbf","message_id":"906e7228-5578-4a3f-a8cd-4130c051ebce","timelineOf":"group-00042","app_id":"tilechat","attributes":{"client":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36","sourcePage":"http://localhost:8100/#/conversation-detail/group-00042/group-00042/active","userFullname":"Andrea Sponziello","lang":"en"},"channel_type":"group","conversWith":"group-00042","metadata":"","recipient":"group-00042","recipient_fullname":"group-00042","sender":"5f005a48ed067c0012dd38cc","sender_fullname":"Andrea Sponziello","status":150,"text":"111","timestamp":1620400085444,"type":"text"},{"_id":"609558676cf52d8165c75e51","message_id":"86edc87f-934d-41ec-ab55-4b726f2a00e9","timelineOf":"group-00042","app_id":"tilechat","attributes":{"client":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36","sourcePage":"http://localhost:8100/#/conversation-detail/group-00042/group-00042/active","userFullname":"Andrea Sponziello","lang":"en"},"channel_type":"group","conversWith":"group-00042","metadata":"","recipient":"group-00042","recipient_fullname":"group-00042","sender":"5f005a48ed067c0012dd38cc","sender_fullname":"Andrea Sponziello","status":150,"text":"222","timestamp":1620400086888,"type":"text"}]')
             console.debug("lastMessages:", messages);
             console.debug("lastMessages stringify:", JSON.stringify(messages));
-            // messages.forEach(message => {
-            //     console
-            // })
             if (err) {
                 console.error("lastMessages Error", err)
                 if (callback) {
