@@ -70,7 +70,7 @@ app.get("/verify", (req, res) => {
 })
 
 app.get(BASEURL + "/:appid/:userid/conversations", (req, res) => {
-  winston.debug("getting /:appid/:userid/conversations")
+  console.debug("HTTP: getting /:appid/:userid/conversations")
   if (!authorize(req, res)) {
     winston.debug("Unauthorized!")
     return
@@ -96,7 +96,7 @@ app.get(BASEURL + "/:appid/:userid/conversations", (req, res) => {
 })
 
 app.get(BASEURL + "/:appid/:userid/conversations/archived", (req, res) => {
-  winston.debug("getting /:appid/:userid/archived_conversations")
+  console.debug("HTTP: getting /:appid/:userid/archived_conversations")
   if (!authorize(req, res)) {
     winston.debug("Unauthorized!")
     return
@@ -132,7 +132,7 @@ function authorize(req, res) {
 }
 
 app.get(BASEURL + "/:appid/:userid/archived_conversations", (req, res) => {
-  winston.debug("GET /:appid/:userid/archived_conversations")
+  console.debug("HTTP: GET /:appid/:userid/archived_conversations")
   if (!authorize(req, res)) {
     return
   }
@@ -155,7 +155,7 @@ app.get(BASEURL + "/:appid/:userid/archived_conversations", (req, res) => {
 })
 
 app.get(BASEURL + "/:appid/:userid/conversations/:conversWith", (req, res) => {
-  winston.debug("GET /:appid/:userid/conversations/:conversWith");
+  console.debug("HTTP: GET /:appid/:userid/conversations/:conversWith");
   if (!authorize(req, res)) {
     return
   }
@@ -197,7 +197,7 @@ function conversations(req, archived, callback) {
 }
 
 app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) => {
-    winston.debug("getting /:appid/:userid/messages")
+    console.debug("HTTP: getting /:appid/:userid/messages")
     const appid = req.params.appid
     const userid = req.params.userid
     const convid = req.params.convid
@@ -228,7 +228,7 @@ app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) =
 
 /** Delete a conversation */
 app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
-  winston.debug('delete: Conversation. req.params:', req.params, 'req.body:', req.body)
+  console.debug('HTTP: delete: Conversation. req.params:', req.params, 'req.body:', req.body)
 
   if (!req.params.recipient_id) {
     res.status(405).send('recipient_id is not present!');
@@ -274,7 +274,7 @@ app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
  * This endpoint supports CORS.
  */
 app.post(BASEURL + '/:app_id/messages', (req, res) => {
-  winston.debug('Sends a message:', JSON.stringify(req.body));
+  console.debug('HTTP: Sends a message:', JSON.stringify(req.body));
   if (!req.body.sender_fullname) {
       winston.error('Sender Fullname is mandatory');
       res.status(405).send('Sender Fullname is mandatory');
@@ -359,7 +359,7 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
 
 /** Create a group */
 app.post(BASEURL + '/:appid/groups', (req, res) => {
-
+  console.debug("HTTP: Create a group /:appid/groups")
   console.debug("appId:" + req.user.appId + ", user:" + req.user.uid)
   if (!req.user || !req.user.appId) {
     res.status(401).end()
@@ -435,7 +435,7 @@ function newGroupId() {
 
 /** Get group data */
 app.get(BASEURL + '/:appid/groups/:group_id', (req, res) => {
-  console.debug("getting /:appid/groups/group_id")
+  console.debug("HTTP: Get group data. getting /:appid/groups/group_id")
   if (!authorize(req, res)) {
     winston.debug("Unauthorized!")
     return
@@ -482,7 +482,7 @@ app.get(BASEURL + '/:appid/groups/:group_id', (req, res) => {
 
 /** Join a group */
 app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
-  console.debug('adds a member to a group', req.body, req.params);
+  console.debug('HTTP: Join a group. adds a member to a group', req.body, req.params);
   if (!authorize(req, res)) {
     console.debug("Unauthorized")
     res.status(401).send('Unauthorized');
@@ -540,7 +540,7 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
 
 /** Set members of a group */
 app.put(BASEURL + '/:app_id/groups/:group_id/members', (req, res) => {
-  winston.debug('Set members of a group with:', req.body);
+  console.debug('HTTP: Set members of a group with:', req.body);
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
@@ -573,7 +573,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/members', (req, res) => {
 /** Leave a group */
 app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', (req, res) => {
   // app.delete('/groups/:group_id/members/:member_id', (req, res) => {
-  winston.debug('Leave group');
+  console.debug('HTTP: Leave group');
   if (!req.params.member_id) {
       res.status(405).send('member_id is mandatory');
       return
@@ -606,7 +606,7 @@ app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', (req, res) 
 
 /** Update group (just group name) */
 app.put(BASEURL + '/:app_id/groups/:group_id', (req, res) => {
-  winston.debug('Update group (just group name)');
+  console.debug('HTTP: Update group (just group name)');
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
@@ -634,7 +634,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id', (req, res) => {
 
 /** Update group custom attributes */
 app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
-  winston.debug('Update group custom attributes for group:' + req.params.group_id + "body:" + JSON.stringify(req.body));
+  console.debug('HTTP: Update group custom attributes for group:' + req.params.group_id + "body:" + JSON.stringify(req.body));
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return

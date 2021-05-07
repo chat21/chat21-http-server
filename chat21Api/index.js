@@ -248,7 +248,9 @@ class Chat21Api {
             this.deliverMessage(appid, message, inbox_of, convers_with, (err) => {
                 if (err) {
                     console.error("error delivering message to joined member", inbox_of)
-                    callback(err)
+                    if (callback) {
+                        callback(err)
+                    }
                     return
                 }
                 else {
@@ -264,11 +266,15 @@ class Chat21Api {
             console.debug("messages:", messages)
             if (err) {
                 console.error("Error", err)
-                callback(err)
+                if (callback) {
+                    callback(err)
+                }
             }
             else if (!messages) {
                 console.info("No messages in group: " + group.uid)
-                callback(null)
+                if (callback) {
+                    callback(null)
+                }
             }
             else {
                 console.debug("delivering old group messages to: " + joined_member_id)
@@ -276,10 +282,13 @@ class Chat21Api {
                 const convers_with = group.uid
                 messages.forEach(message => {
                     // TODO: CHECK IN MESSAGE WAS ALREADY DELIVERED. (CLIENT? SERVER?)
-                    console.debug("Message: " + message.text)
+                    console.debug("Delivering message: " + message.text)
                     this.deliverMessage(appid, message, inbox_of, convers_with, (err) => {
                         if (err) {
                             console.error("error delivering message to joined member", inbox_of)
+                            if (callback) {
+                                callback(err)
+                            }
                         }
                         else {
                             console.debug("DELIVERED MESSAGE TO: " + inbox_of +  " CONVERS_WITH " + convers_with)
@@ -326,23 +335,31 @@ class Chat21Api {
                         console.error("An error occurred:", err)
                         const reply = {
                             success: false,
-                            err: err.message() ? err.message() : "Error saving group"
+                            err: err,
+                            message: "Error saving group"
                         }
-                        callback(reply)
+                        if (callback) {
+                            callback(reply);
+                        }
                         return
                     }
                     console.debug("....saved group with leaved member. " + JSON.stringify(group))
                     console.debug("... notify to old members " +old_members + " the new group")
                     this.notifyGroupUpdate(group, old_members, (err) => { // TO OLD MEMBERS
                         if (err) {
+                            const reply = {
+                                success: false,
+                                err: err,
+                                message: "Error notitfying group update"
+                            }
                             if (callback) {
-                                callback(err);
+                                callback(reply);
                             }
                             return
                         }
-                        if (callback) {
-                            callback(null);
-                        }
+                        // if (callback) {
+                        //     callback(null);
+                        // }
                         // old_members.sendMessage("member_id leaved the group")
                         for (let [member_id, value] of Object.entries(old_members)) {
                             console.debug("to member: " + member_id)
@@ -375,8 +392,10 @@ class Chat21Api {
                             let convers_with = group.uid
                             this.deliverMessage(group.appId, message, inbox_of, convers_with, function(err) {
                                 if (err) {
-                                    console.error("error delivering message to member (about the left member)", inbox_of)
-                                    callback(err)
+                                    console.error("error delivering message to members (about the member who left)", inbox_of)
+                                    if (callback) {
+                                        callback(err)
+                                    }
                                     return
                                 }
                                 else {
@@ -384,6 +403,7 @@ class Chat21Api {
                                 }
                             })
                         }
+                        callback(null);
                     })
                 })
                 // chatdb.update_group.new_members
@@ -419,8 +439,8 @@ class Chat21Api {
                 winston.error("error delivering message to joined member on topic", deliver_message_topic)
                 if (callback) {
                     callback(err)
-                    return
                 }
+                return
             }
             if (callback) {
                 callback(null)
@@ -476,7 +496,9 @@ class Chat21Api {
     }
 
     setGroupMembers(user, new_members, group_id, callback) {
+        console.log("setGroupMembers user:", user, " members:", new_members, " group_id:", group_id)
         this.chatdb.getGroup(group_id, (err, group) => {
+            console.log("Got group:", group)
             if (err || !group) {
                 winston.error("group found? with err", err)
                 callback({err: {message: "Not found"}})
@@ -488,7 +510,7 @@ class Chat21Api {
                 callback({err: {message: "Unauthorized"}})
                 return
             }
-            // 2. updates members and update group
+            // 2. update members and update group
             const old_members = {...group.members} // save old members to notify group update LATER
             group.members = new_members;
             const now = Date.now()
@@ -511,8 +533,9 @@ class Chat21Api {
                     }
                     callback(null);
                     // 4. join new members
+                    console.log("*****new members", new_members)
                     for (let [member_id, value] of Object.entries(new_members)) {
-                        winston.debug(">>>>> JOINING MEMBER: " + member_id)
+                        console.debug(">>>>> JOINING MEMBER: " + member_id)
                         this.joinGroup(member_id, group, function(reply) {
                             winston.debug("member " + member_id + " invited on group " + group_id + " result " + reply)
                         })
