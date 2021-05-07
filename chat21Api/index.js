@@ -513,33 +513,58 @@ class Chat21Api {
             // 2. update members and update group
             const old_members = {...group.members} // save old members to notify group update LATER
             group.members = new_members;
+            
+            let added_members = {}
+            for (const [key, value] of Object.entries(new_members)) {
+                console.log(`${key}: ${value}`);
+                if (old_members[key]) {
+                    console.log("member alredy present", key)
+                }
+                else {
+                    added_members[key] = 1
+                }
+            }
+            console.log("added_members:", added_members);
+            if (Object.keys(added_members).length == 0) {
+                console.debug("Same members in group, skipping setGroupMembers()");
+                if (callback) {
+                    callback({err: {message: "Same members in group, skipping setGroupMembers()"}})
+                }
+                return
+            }
+
             const now = Date.now()
             group.updatedOn = now;
             this.chatdb.saveOrUpdateGroup(group, (err) => {
                 if (err) {
-                    winston.error("An error occurred:", err)
+                    console.error("An error occurred:", err)
                     const reply = {
                         success: false,
                         err: err.message() ? err.message() : "Error saving group"
                     }
-                    callback(reply)
+                    if (callback) {
+                        callback(reply)
+                    }
                     return
                 }
                 winston.debug("....saved group with no member." + JSON.stringify(group))
                 this.notifyGroupUpdate(group, old_members, (err) => { // TO OLD MEMBERS
                     if (err) {
-                        callback(err);
+                        console.error("notifyGroupUpdate Error" , err);
+                        if (callback) {
+                            callback(err);
+                        }
                         return
                     }
                     callback(null);
-                    // 4. join new members
-                    console.log("*****new members", new_members)
-                    for (let [member_id, value] of Object.entries(new_members)) {
-                        console.debug(">>>>> JOINING MEMBER: " + member_id)
-                        this.joinGroup(member_id, group, function(reply) {
-                            winston.debug("member " + member_id + " invited on group " + group_id + " result " + reply)
-                        })
-                    }
+                    // 4. join added members
+                    // console.log("*****added members", new_members)
+                    // for (let [member_id, value] of Object.entries(new_members)) {
+                    //     console.debug(">>>>> JOINING MEMBER: " + member_id)
+                    //     this.joinGroup(member_id, group, function(reply) {
+                    //         console.debug("member " + member_id + " invited on group " + group_id + " result " + reply)
+                    //     })
+                    // }
                 })
             })
         })
@@ -564,7 +589,7 @@ class Chat21Api {
             group.updatedOn = now;
             this.chatdb.saveOrUpdateGroup(group, (err) => {
                 if (err) {
-                    winston.error("An error occurred:", err)
+                    console.error("An error occurred:", err)
                     const reply = {
                         success: false,
                         err: err.message() ? err.message() : "Error saving group"
