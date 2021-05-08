@@ -34,7 +34,7 @@ class Chat21Api {
         this.offlinePubQueue = [];
         this.amqpConn = null;
     }
-  
+
     archiveConversation(app_id, user_id, convers_with, callback) {
         // NOTE! THIS ARRIVES DIRECTLY ON THE CLIENT! REFACTOR WITH SOME "OBSERVER.APPS....ARCHIVE" TOPIC
         let dest_topic = `apps.${app_id}.users.${user_id}.conversations.${convers_with}.archive`
@@ -43,147 +43,290 @@ class Chat21Api {
             action: 'archive'
         }
         const payload = JSON.stringify(patch)
-        this.publish(dest_topic, Buffer.from(payload), function(err) {
+        this.publish(dest_topic, Buffer.from(payload), function (err) {
             if (callback) {
                 callback(err)
             }
         });
     }
 
-    // REFACTOR AS SET MEMBERS
+    // createGroup(group, callback) {
+    //     // 1. create group json
+    //     // 2. save group json in mongodb
+    //     // 3. publish to /observer
+    //     // 4. observer publishes JSON to all members (task on the observer)
+    //     // 5. observer (virtually) creates group 'timelineOf' messages (that's created on the first message sent by one member)
+    //     this.saveOrUpdateGroup(group, (err) => { // 2. save group json in mongodb
+    //         if (err) {
+    //             console.error("Error while saving 'create group':", err);
+    //             callback(err);
+    //         }
+    //         else {
+    //             var create_group_topic = `apps.observer.${group.appId}.groups.create`
+    //             winston.debug("Publishing to topic: " + create_group_topic);
+    //             winston.debug(">>> NOW PUBLISHING... CREATE GROUP TOPIC: " + create_group_topic)
+    //             const group_payload = JSON.stringify(group)
+    //             this.publish(create_group_topic, Buffer.from(group_payload), function(err) { // 3. publish to /observer
+    //                 if (err) {
+    //                     console.error("Error while publishing 'create group':", err);
+    //                     callback(err);
+    //                 }
+    //                 else {
+    //                     winston.debug("PUBLISHED 'CREATE GROUP' ON TOPIC: " + create_group_topic);
+    //                     callback(null);
+    //                 }
+    //             });
+    //         }
+    //     })
+    // }
+
     createGroup(group, callback) {
         // 1. create group json
         // 2. save group json in mongodb
-        // 3. publish to /observer
-        // 4. observer publishes JSON to all members (task on the observer)
-        // 5. observer (virtually) creates group 'timelineOf' messages (that's created on the first message sent by one member)
         this.saveOrUpdateGroup(group, (err) => { // 2. save group json in mongodb
             if (err) {
                 console.error("Error while saving 'create group':", err);
                 callback(err);
             }
             else {
-                var create_group_topic = `apps.observer.${group.appId}.groups.create`
-                winston.debug("Publishing to topic: " + create_group_topic);
-                winston.debug(">>> NOW PUBLISHING... CREATE GROUP TOPIC: " + create_group_topic)
-                const group_payload = JSON.stringify(group)
-                this.publish(create_group_topic, Buffer.from(group_payload), function(err) { // 3. publish to /observer
+                // NOTE: DISABLED GROUP-ADDED NOTIFICATION!
+                // this.deliverGroupAdded(group, (err) => {
+                //     if (err) {
+                //         console.error('An error occurred during group creation, saving group data')
+                //         callback(err);
+                //     }
+                //     else {
+                this.sendGroupWelcomeMessage(group, (err) => {
                     if (err) {
-                        console.error("Error while publishing 'create group':", err);
+                        console.error('An error occurred during group creation, sendGroupWelcomeMessage To Initial Members', err)
                         callback(err);
                     }
                     else {
-                        winston.debug("PUBLISHED 'CREATE GROUP' ON TOPIC: " + create_group_topic);
+                        console.debug("SENDING 'ADDED TO GROUP' FOR EACH MEMBER TO EACH MEMBER...", group);
+                        const appid = group.appId
+                        for (let [member_id, value] of Object.entries(group.members)) {
+                            console.debug("Sending: '" + member_id + " added to group on creation', to the group: " + group.uid);
+                            const message = {
+                                type: "text",
+                                text: member_id + " added to group on creation",
+                                timestamp: Date.now(),
+                                channel_type: "group",
+                                sender_fullname: "System",
+                                sender: "system",
+                                recipient_fullname: group.name,
+                                recipient: group.uid,
+                                attributes: {
+                                    subtype: "info",
+                                    updateconversation: true,
+                                    messagelabel: {
+                                        key: "MEMBER_JOINED_GROUP",
+                                        parameters: {
+                                            member_id: member_id
+                                            // fullname: fullname // OPTIONAL
+                                        }
+                                    }
+                                }
+                            }
+                            console.debug("Member joined group message:", message)
+                            this.sendMessageRaw(
+                                appid,
+                                message,
+                                (err) => {
+                                    if (err) {
+                                        console.error("Error delivering message to members for 'added to group on creation'", message);
+                                        return
+                                    }
+                                    else {
+                                        console.debug("SENT MESSAGE TO: " + group.uid)
+                                    }
+                                }
+                            );
+                        }
                         callback(null);
                     }
                 });
+                //     }
+                // });
             }
-        })
+        });
+    }
+
+    deliverGroupAdded(group, callback) {
+        const app_id = group.appId
+        console.debug("group IS", group)
+        console.debug("APP_ID IS", app_id)
+        for (let [key, value] of Object.entries(group.members)) {
+            const member_id = key
+            const added_group_topic = `apps.${app_id}.users.${member_id}.groups.${group.uid}.clientadded`
+            console.debug("added_group_topic:", added_group_topic)
+            const payload = JSON.stringify(group)
+            this.publish(added_group_topic, Buffer.from(payload), function (err, msg) {
+                if (err) {
+                    console.error("error publish deliverGroupAdded", err);
+                    if (callback) {
+                        callback(err);
+                    }
+                }
+                else {
+                    if (callback) {
+                        callback(null);
+                    }
+                }
+            })
+        }
+    }
+
+    sendGroupWelcomeMessage(group, callback) {
+        // for (let [key, value] of Object.entries(group.members)) {
+        const app_id = group.appId;
+        var group_created_message = {
+            // message_id: uuid(),
+            type: "text",
+            text: "Group created",
+            timestamp: Date.now(),
+            channel_type: "group",
+            sender_fullname: "System",
+            sender: "system",
+            recipient_fullname: group.name,
+            recipient: group.uid,
+            // status: MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
+            attributes: {
+                subtype: "info",
+                updateconversation: true,
+                messagelabel: {
+                    key: "GROUP_CREATED",
+                    parameters:
+                    {
+                        creator: group.owner
+                    }
+                }
+            }
+        }
+        this.sendMessageRaw(
+            app_id,
+            group_created_message,
+            (err) => {
+                if (err) {
+                    console.error("Error delivering message:", group_created_message)
+                    if (callback) {
+                        callback(err)
+                    }
+                }
+                else {
+                    console.debug("MESSAGE 'GROUP_CREATED' SENT TO: " + group.uid)
+                    if (callback) {
+                        callback(null)
+                    }
+                }
+            }
+        );
+        // }
     }
 
     saveOrUpdateGroup(group, callback) {
-        this.chatdb.saveOrUpdateGroup(group, function(err, doc) {
-          if (err) {
-            winston.error("Error saving group:", err);
-            callback(err);
-            return
-          }
-          else {
-            callback(null);
-          }
+        this.chatdb.saveOrUpdateGroup(group, function (err, doc) {
+            if (err) {
+                winston.error("Error saving group:", err);
+                callback(err);
+                return
+            }
+            else {
+                callback(null);
+            }
         })
     }
 
     addMemberToGroupAndNotifyUpdate(user, joined_member_id, group_id, callback) {
         console.debug("addMemberToGroupAndNotifyUpdate()")
         this.chatdb.getGroup(group_id, (err, group) => {
-          console.debug("found group", group)
-          if (err || !group) {
-            winston.error("group found? with err", err)
-            const reply = {
-                success: false,
-                err: (err && err.message()) ? err.message() : "Not found",
-                http_status: 404
-            }
-            // res.status(404).send(reply)
-            if (callback) {
-              callback(reply, null)
-            }
-          }
-          else {
-            //group.appId = app_id;
-            console.debug("actual group members", group.members)
-            console.debug("actual group owner", group.owner)
-            const im_owner = (group.owner === user.uid)
-            const im_admin = user.roles.admin
-            console.debug("im_owner: " + im_owner)
-            console.debug("im_admin: " + im_admin)
-            if (im_admin || im_owner) {
-              console.debug("adding member", joined_member_id)
-              if (group.members[joined_member_id]) {
+            console.debug("found group", group)
+            if (err || !group) {
+                winston.error("group found? with err", err)
                 const reply = {
-                  success: false,
-                  err: "Already a member",
-                  http_status: 401
+                    success: false,
+                    err: (err && err.message()) ? err.message() : "Not found",
+                    http_status: 404
                 }
+                // res.status(404).send(reply)
                 if (callback) {
-                  callback(reply, null)
-                }
-                return
-              }
-              group.members[joined_member_id] = 1
-              console.debug("new members to add", group.members)
-              this.chatdb.joinGroup(group_id, joined_member_id, (err) => {
-                if (err) {
-                  winston.error("An error occurred:", err)
-                  const reply = {
-                      success: false,
-                      err: err.message() ? err.message() : "Error joining group",
-                      http_status: 500
-                  }
-                  if (callback) {
                     callback(reply, null)
-                  }
                 }
-                else {
-                  console.debug("group updated with new joined member.")
-                  this.notifyGroupUpdate(group, group.members, (err) => {
-                    console.debug("PUBLISHED 'UPDATE GROUP'")
-                    if (err) {
-                      if (callback) {
-                        callback({"success":false, "err": err, http_status: 500}, null)
-                        return
-                      }
-                    }
-                    else {
-                      if (callback) {
-                        callback(
-                          {"success":true,
-                            http_status: 200
-                          },
-                          group // SUCCESS!!!!
-                        )
-                        console.debug("GROUP IS", group)
-                      }
-                    }
-                  });
-                }
-              })
             }
             else {
-              const reply = {
-                success: false,
-                err: "Not allowed"
-              }
-              // res.status(401).send(reply)
-              if (callback) {
-                callback(reply, null)
-              }
+                //group.appId = app_id;
+                console.debug("actual group members", group.members)
+                console.debug("actual group owner", group.owner)
+                const im_owner = (group.owner === user.uid)
+                const im_admin = user.roles.admin
+                console.debug("im_owner: " + im_owner)
+                console.debug("im_admin: " + im_admin)
+                if (im_admin || im_owner) {
+                    console.debug("adding member", joined_member_id)
+                    if (group.members[joined_member_id]) {
+                        const reply = {
+                            success: false,
+                            err: "Already a member",
+                            http_status: 401
+                        }
+                        if (callback) {
+                            callback(reply, null)
+                        }
+                        return
+                    }
+                    group.members[joined_member_id] = 1
+                    console.debug("new members to add", group.members)
+                    this.chatdb.joinGroup(group_id, joined_member_id, (err) => {
+                        if (err) {
+                            winston.error("An error occurred:", err)
+                            const reply = {
+                                success: false,
+                                err: err.message() ? err.message() : "Error joining group",
+                                http_status: 500
+                            }
+                            if (callback) {
+                                callback(reply, null)
+                            }
+                        }
+                        else {
+                            console.debug("group updated with new joined member.")
+                            this.notifyGroupUpdate(group, group.members, (err) => {
+                                console.debug("PUBLISHED 'UPDATE GROUP'")
+                                if (err) {
+                                    if (callback) {
+                                        callback({ "success": false, "err": err, http_status: 500 }, null)
+                                        return
+                                    }
+                                }
+                                else {
+                                    if (callback) {
+                                        callback(
+                                            {
+                                                "success": true,
+                                                http_status: 200
+                                            },
+                                            group // SUCCESS!!!!
+                                        )
+                                        console.debug("GROUP IS", group)
+                                    }
+                                }
+                            });
+                        }
+                    })
+                }
+                else {
+                    const reply = {
+                        success: false,
+                        err: "Not allowed"
+                    }
+                    // res.status(401).send(reply)
+                    if (callback) {
+                        callback(reply, null)
+                    }
+                }
             }
-          }
         });
     }
-    
+
     /** 
      * Notifies 'groups.update' to the selected user
      */
@@ -191,14 +334,14 @@ class Chat21Api {
         var update_group_topic = `apps.observer.${group.appId}.groups.update`
         console.debug("updating group to " + update_group_topic);
         const data = {
-          group: group,
-          notify_to: users_to_be_notified //{...new_members, ...old_members }
+            group: group,
+            notify_to: users_to_be_notified //{...new_members, ...old_members }
         }
         const group_payload = JSON.stringify(data)
         console.debug("payload:", group_payload)
         this.publish(update_group_topic, Buffer.from(group_payload), (err) => {
-          console.debug("PUBLISHED 'UPDATE GROUP' ON TOPIC: " + update_group_topic)
-          callback(err)
+            console.debug("PUBLISHED 'UPDATE GROUP' ON TOPIC: " + update_group_topic)
+            callback(err)
         })
     }
 
@@ -209,12 +352,12 @@ class Chat21Api {
      * NOTE: this method doesn't modify the group members neither sends a group.updated message to
      * the clients. Use addMemberToGroupAndNotifyUpdate() to reach these couple of goals.
      * 
-     * @param {*} joined_member_id 
-     * @param {*} group 
-     * @param {*} callback 
+     * @param {*} joined_member_id
+     * @param {*} group
+     * @param {*} callback
      */
     joinGroupMessages(joined_member_id, group, callback) {
-        console.debug("'system' sends 'added to group' to (group:" +  group.uid + ") - members: " + JSON.stringify(group.members))
+        console.debug("'system' sends 'added to group' to (group:" + group.uid + ") - members: " + JSON.stringify(group.members))
         const appid = group.appId
         const now = Date.now()
         const message = {
@@ -229,8 +372,8 @@ class Chat21Api {
             recipient: group.uid,
             //status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
             attributes: {
-                subtype:"info",
-                updateconversation : true,
+                subtype: "info",
+                updateconversation: true,
                 messagelabel: {
                     key: "MEMBER_JOINED_GROUP",
                     parameters: {
@@ -253,35 +396,36 @@ class Chat21Api {
                 }
                 else {
                     console.debug("Sent message to: " + group.uid);
+                    callback(null);
                 }
             }
         );
         // for (let [member_id, value] of Object.entries(group.members)) {
         //     console.debug("to member: " + member_id)
         //     const now = Date.now()
-            // const message = {
-            //     message_id: uuid(),
-            //     type: "text",
-            //     text: joined_member_id + " added to group",
-            //     timestamp: now,
-            //     channel_type: "group",
-            //     sender_fullname: "System",
-            //     sender: "system",
-            //     recipient_fullname: group.name,
-            //     recipient: group.uid,
-            //     status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
-            //     attributes: {
-            //         subtype:"info",
-            //         updateconversation : true,
-            //         messagelabel: {
-            //             key: "MEMBER_JOINED_GROUP",
-            //             parameters: {
-            //                 member_id: joined_member_id
-            //                 // fullname: fullname // OPTIONAL
-            //             }
-            //         }
-            //     }
-            // }
+        // const message = {
+        //     message_id: uuid(),
+        //     type: "text",
+        //     text: joined_member_id + " added to group",
+        //     timestamp: now,
+        //     channel_type: "group",
+        //     sender_fullname: "System",
+        //     sender: "system",
+        //     recipient_fullname: group.name,
+        //     recipient: group.uid,
+        //     status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
+        //     attributes: {
+        //         subtype:"info",
+        //         updateconversation : true,
+        //         messagelabel: {
+        //             key: "MEMBER_JOINED_GROUP",
+        //             parameters: {
+        //                 member_id: joined_member_id
+        //                 // fullname: fullname // OPTIONAL
+        //             }
+        //         }
+        //     }
+        // }
         //     console.debug("Member joined group message: " + JSON.stringify(message))
         //     let inbox_of = member_id
         //     let convers_with = group.uid
@@ -336,7 +480,7 @@ class Chat21Api {
                         }
                         else {
                             // QUI NON ARRIVA IN LOCALE????
-                            console.debug("DELIVERED MESSAGE TO: " + inbox_of +  " __CONVERS_WITH__ " + convers_with_group)
+                            console.debug("DELIVERED MESSAGE TO: " + inbox_of + " __CONVERS_WITH__ " + convers_with_group)
                         }
                     })
                 });
@@ -350,102 +494,102 @@ class Chat21Api {
         console.debug("member: " + removed_member_id + " will leave group: " + group_id)
         this.chatdb.getGroup(group_id, (err, group) => {
             if (err || !group) {
-              console.error("group found? with err", err)
-              const reply = {
-                  success: false,
-                  err: (err && err.message()) ? err.message() : "Not found",
-                  http_status: 404
-              }
-              if (callback) {
-                callback(reply)
-              }
+                console.error("group found? with err", err)
+                const reply = {
+                    success: false,
+                    err: (err && err.message()) ? err.message() : "Not found",
+                    http_status: 404
+                }
+                if (callback) {
+                    callback(reply)
+                }
             }
             else {
-              console.debug("group found.")
-              console.debug("actual group members: " + JSON.stringify(group.members))
-              console.debug("group owner: " + JSON.stringify(group.owner))
-              const im_owner = (group.owner === user.uid)
-              const im_admin = user.roles.admin
-              const im_member = group.members[user.uid]
-              const member_exists = group.members[removed_member_id]
-              console.debug("im_owner: " +im_owner)
-              console.debug("im_admin: " + im_admin)
-              if ((im_admin || im_owner || im_member) && member_exists) {
-                let old_members = {...group.members};
-                delete group.members[removed_member_id]
-                console.debug("old members: " + JSON.stringify(old_members))
-                console.debug("new members: " + JSON.stringify(group.members))
-                this.chatdb.saveOrUpdateGroup(group, (err) => {
-                    if (err) {
-                        console.error("An error occurred:", err)
-                        const reply = {
-                            success: false,
-                            err: err,
-                            message: "Error saving group"
-                        }
-                        if (callback) {
-                            callback(reply);
-                        }
-                        return
-                    }
-                    console.debug("....saved group with leaved member. " + JSON.stringify(group))
-                    console.debug("... notify to old members " +old_members + " the new group")
-                    this.notifyGroupUpdate(group, old_members, (err) => { // TO OLD MEMBERS
+                console.debug("group found.")
+                console.debug("actual group members: " + JSON.stringify(group.members))
+                console.debug("group owner: " + JSON.stringify(group.owner))
+                const im_owner = (group.owner === user.uid)
+                const im_admin = user.roles.admin
+                const im_member = group.members[user.uid]
+                const member_exists = group.members[removed_member_id]
+                console.debug("im_owner: " + im_owner)
+                console.debug("im_admin: " + im_admin)
+                if ((im_admin || im_owner || im_member) && member_exists) {
+                    let old_members = { ...group.members };
+                    delete group.members[removed_member_id]
+                    console.debug("old members: " + JSON.stringify(old_members))
+                    console.debug("new members: " + JSON.stringify(group.members))
+                    this.chatdb.saveOrUpdateGroup(group, (err) => {
                         if (err) {
+                            console.error("An error occurred:", err)
                             const reply = {
                                 success: false,
                                 err: err,
-                                message: "Error notitfying group update"
+                                message: "Error saving group"
                             }
                             if (callback) {
                                 callback(reply);
                             }
                             return
                         }
-                        // "system" sends message "removed from group" to all group members
-                        const now = Date.now();
-                        const message = {
-                            message_id: uuid(),
-                            type: "text",
-                            text: removed_member_id + " removed from group",
-                            timestamp: now,
-                            channel_type: "group",
-                            sender_fullname: "System",
-                            sender: "system",
-                            recipient_fullname: group.name,
-                            recipient: group.uid,
-                            status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
-                            attributes: {
-                                subtype:"info",
-                                updateconversation : true,
-                                messagelabel: {
-                                    key: "MEMBER_LEFT_GROUP",
-                                    parameters: {
-                                        member_id: removed_member_id
-                                        // fullname: fullname // OPTIONAL
+                        console.debug("....saved group with leaved member. " + JSON.stringify(group))
+                        console.debug("... notify to old members " + old_members + " the new group")
+                        this.notifyGroupUpdate(group, old_members, (err) => { // TO OLD MEMBERS
+                            if (err) {
+                                const reply = {
+                                    success: false,
+                                    err: err,
+                                    message: "Error notitfying group update"
+                                }
+                                if (callback) {
+                                    callback(reply);
+                                }
+                                return
+                            }
+                            // "system" sends message "removed from group" to all group members
+                            const now = Date.now();
+                            const message = {
+                                message_id: uuid(),
+                                type: "text",
+                                text: removed_member_id + " removed from group",
+                                timestamp: now,
+                                channel_type: "group",
+                                sender_fullname: "System",
+                                sender: "system",
+                                recipient_fullname: group.name,
+                                recipient: group.uid,
+                                status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
+                                attributes: {
+                                    subtype: "info",
+                                    updateconversation: true,
+                                    messagelabel: {
+                                        key: "MEMBER_LEFT_GROUP",
+                                        parameters: {
+                                            member_id: removed_member_id
+                                            // fullname: fullname // OPTIONAL
+                                        }
                                     }
                                 }
                             }
-                        }
-                        this.sendMessageRaw(
-                            appid,
-                            message,
-                            (err) => {
-                                if (err) {
-                                    console.error("Error delivering message to members for 'leave group'", inbox_of)
-                                    if (callback) {
-                                        callback(err)
+                            this.sendMessageRaw(
+                                appid,
+                                message,
+                                (err) => {
+                                    if (err) {
+                                        console.error("Error delivering message to members for 'leave group'", inbox_of)
+                                        if (callback) {
+                                            callback(err)
+                                        }
+                                        return
                                     }
-                                    return
+                                    else {
+                                        console.debug("SENT MESSAGE TO: " + group.uid)
+                                    }
                                 }
-                                else {
-                                    console.debug("SENT MESSAGE TO: " + group.uid)
-                                }
-                            }
-                        );
-                        // for (let [member_id, value] of Object.entries(old_members)) {
-                        //     console.debug("to member: " + member_id)
-                        //     const now = Date.now()
+                            );
+                            // for (let [member_id, value] of Object.entries(old_members)) {
+                            //     console.debug("to member: " + member_id)
+                            //     const now = Date.now()
                             // const message = {
                             //     message_id: uuid(),
                             //     type: "text",
@@ -469,53 +613,53 @@ class Chat21Api {
                             //         }
                             //     }
                             // }
-                        //     console.debug("Member left group message: " + JSON.stringify(message))
-                        //     let inbox_of = member_id
-                        //     let convers_with = group.uid
-                        //     this.deliverMessage(group.appId, message, inbox_of, convers_with, function(err) {
-                        //         if (err) {
-                        //             console.error("error delivering message to members (about the member who left)", inbox_of)
-                        //             if (callback) {
-                        //                 callback(err)
-                        //             }
-                        //             return
-                        //         }
-                        //         else {
-                        //             console.debug("DELIVERED MESSAGE TO: " + inbox_of + " CONVERS_WITH " + convers_with)
-                        //         }
-                        //     })
-                        // }
-                        callback(null);
+                            //     console.debug("Member left group message: " + JSON.stringify(message))
+                            //     let inbox_of = member_id
+                            //     let convers_with = group.uid
+                            //     this.deliverMessage(group.appId, message, inbox_of, convers_with, function(err) {
+                            //         if (err) {
+                            //             console.error("error delivering message to members (about the member who left)", inbox_of)
+                            //             if (callback) {
+                            //                 callback(err)
+                            //             }
+                            //             return
+                            //         }
+                            //         else {
+                            //             console.debug("DELIVERED MESSAGE TO: " + inbox_of + " CONVERS_WITH " + convers_with)
+                            //         }
+                            //     })
+                            // }
+                            callback(null);
+                        })
                     })
-                })
-                // chatdb.update_group.new_members
-                // group.update(new_members).to(current members)
-                // new_members.sendMessage("member_id leaved the group")
-              }
-              else {
-                const reply = {
-                    success: false,
-                    err: (err && err.message()) ? err.message() : "Not found",
-                    http_status: 404
+                    // chatdb.update_group.new_members
+                    // group.update(new_members).to(current members)
+                    // new_members.sendMessage("member_id leaved the group")
                 }
-                if (callback) {
-                  callback(reply)
+                else {
+                    const reply = {
+                        success: false,
+                        err: (err && err.message()) ? err.message() : "Not found",
+                        http_status: 404
+                    }
+                    if (callback) {
+                        callback(reply)
+                    }
                 }
-              }
             }
         });
     }
 
     deliverMessage(
-            appid, // mandatory
-            message, // mandatory
-            inbox_of, // mandatory
-            convers_with, // mandatory
-            callback // optional | null
-        ) {
+        appid, // mandatory
+        message, // mandatory
+        inbox_of, // mandatory
+        convers_with, // mandatory
+        callback // optional | null
+    ) {
         const deliver_message_topic = `apps.observer.${appid}.users.${inbox_of}.messages.${convers_with}.delivered`
         const message_payload = JSON.stringify(message)
-        this.publish(deliver_message_topic, Buffer.from(message_payload), function(err) {
+        this.publish(deliver_message_topic, Buffer.from(message_payload), function (err) {
             winston.debug("PUBLISH: DELIVER MESSAGE TO TOPIC: " + deliver_message_topic)
             if (err) {
                 winston.error("error delivering message to joined member on topic", deliver_message_topic)
@@ -543,89 +687,91 @@ class Chat21Api {
         attributes, // optional | null
         metadata, // optional | null
         callback // optional | null
-      ) {
-      const outgoing_message = {
-        text: text,
-        type: type,
-        recipient_fullname: recipient_fullname,
-        sender_fullname: sender_fullname,
-        channel_type: channel_type? channel_type : "direct",
-      }
-      if (attributes) {
-        outgoing_message.attributes = attributes
-      }
-      if (metadata) {
-        outgoing_message.metadata = metadata
-      }
-      if (timestamp) {
-        outgoing_message.timestamp = timestamp
-      }
-      winston.debug("outgoing_message: " + JSON.stringify(outgoing_message))
-      let dest_topic = `apps.${appid}.users.${sender}.messages.${recipient}.outgoing`
-      const message_payload = JSON.stringify(outgoing_message)
-      this.publish(dest_topic, Buffer.from(message_payload), function(err) {
-        winston.debug("PUBLISHED: SENDING MESSAGE TO TOPIC: " + dest_topic)
-        if (err) {
-          winston.error("error sending message On topic: " + dest_topic, err)
-          if (callback) {
-            callback(err)
-            return
-          }
+    ) {
+        const outgoing_message = {
+            text: text,
+            type: type,
+            recipient_fullname: recipient_fullname,
+            sender_fullname: sender_fullname,
+            channel_type: channel_type ? channel_type : "direct",
         }
-        winston.verbose("Message Sent to queue: " + JSON.stringify(outgoing_message) + " to "+ dest_topic);
-        callback(null)
-      });
+        if (attributes) {
+            outgoing_message.attributes = attributes
+        }
+        if (metadata) {
+            outgoing_message.metadata = metadata
+        }
+        if (timestamp) {
+            outgoing_message.timestamp = timestamp
+        }
+        winston.debug("outgoing_message: " + JSON.stringify(outgoing_message))
+        let dest_topic = `apps.${appid}.users.${sender}.messages.${recipient}.outgoing`
+        const message_payload = JSON.stringify(outgoing_message)
+        this.publish(dest_topic, Buffer.from(message_payload), function (err) {
+            winston.debug("PUBLISHED: SENDING MESSAGE TO TOPIC: " + dest_topic)
+            if (err) {
+                winston.error("error sending message On topic: " + dest_topic, err)
+                if (callback) {
+                    callback(err)
+                    return
+                }
+            }
+            winston.verbose("Message Sent to queue: " + JSON.stringify(outgoing_message) + " to " + dest_topic);
+            callback(null)
+        });
     }
 
     sendMessageRaw(
         appid, // mandatory
         outgoing_message, // mandatory
         callback // optional | null
-      ) {
+    ) {
         if (!appid) {
-            callback({message: "appid is can't be null"});
+            callback({ message: "appid can't be null" });
             return
-          }
-
-          if (!outgoing_message.sender) {
-            callback({message: "sender is mandatory"});
-            return
-          }
-          if (!outgoing_message.recipient) {
-            callback({message: "recipient is mandatory"});
-            return
-          }
-    //   const outgoing_message = {
-    //     text: text,
-    //     type: type,
-    //     recipient_fullname: recipient_fullname,
-    //     sender_fullname: sender_fullname,
-    //     channel_type: channel_type? channel_type : "direct",
-    //   }
-    //   if (attributes) {
-    //     outgoing_message.attributes = attributes
-    //   }
-    //   if (metadata) {
-    //     outgoing_message.metadata = metadata
-    //   }
-    //   if (timestamp) {
-    //     outgoing_message.timestamp = timestamp
-    //   }
-      winston.debug("outgoing_message: " + JSON.stringify(outgoing_message))
-      let dest_topic = `apps.${appid}.users.${outgoing_message.sender}.messages.${outgoing_message.recipient}.outgoing`
-      const message_payload = JSON.stringify(outgoing_message)
-      this.publish(dest_topic, Buffer.from(message_payload), function(err) {
-        winston.debug("PUBLISHED: SENDING RAW MESSAGE TO TOPIC: " + dest_topic)
-        if (err) {
-          winston.error("Error sending raw message on topic: " + dest_topic, err)
-          if (callback) {
-            callback(err)
-            return
-          }
         }
-        winston.verbose("Message sent to queue: " + JSON.stringify(outgoing_message) + " to "+ dest_topic);
-        callback(null)
-      });
+
+        if (!outgoing_message.sender) {
+            callback({ message: "sender is mandatory" });
+            return
+        }
+        if (!outgoing_message.recipient) {
+            callback({ message: "recipient is mandatory" });
+            return
+        }
+        //   const outgoing_message = {
+        //     text: text,
+        //     type: type,
+        //     recipient_fullname: recipient_fullname,
+        //     sender_fullname: sender_fullname,
+        //     channel_type: channel_type? channel_type : "direct",
+        //   }
+        //   if (attributes) {
+        //     outgoing_message.attributes = attributes
+        //   }
+        //   if (metadata) {
+        //     outgoing_message.metadata = metadata
+        //   }
+        //   if (timestamp) {
+        //     outgoing_message.timestamp = timestamp
+        //   }
+        console.debug("outgoing_message (sendMessageRaw): " + JSON.stringify(outgoing_message))
+        let dest_topic = `apps.${appid}.users.${outgoing_message.sender}.messages.${outgoing_message.recipient}.outgoing`
+        console.debug("dest_topic (sendMessageRaw): " + dest_topic)
+        const message_payload = JSON.stringify(outgoing_message)
+        this.publish(dest_topic, Buffer.from(message_payload), (err) => {
+            console.debug("PUBLISHED: SENDING RAW MESSAGE TO TOPIC: " + dest_topic)
+            if (err) {
+                console.error("Error sending raw message on topic: " + dest_topic, err)
+                if (callback) {
+                    callback(err)
+                }
+            }
+            else {
+                console.debug("Message sent to queue: " + JSON.stringify(outgoing_message) + " to " + dest_topic);
+                callback(null)
+            }
+        });
     }
 
     setGroupMembers(user, new_members, group_id, callback) {
@@ -634,19 +780,19 @@ class Chat21Api {
             console.log("Got group:", group)
             if (err || !group) {
                 winston.error("group found? with err", err)
-                callback({err: {message: "Not found"}})
+                callback({ err: { message: "Not found" } })
                 return
             }
             const im_owner = (group.owner === user.uid)
             const im_admin = user.roles.admin
             if (!(im_admin || im_owner)) {
-                callback({err: {message: "Unauthorized"}})
+                callback({ err: { message: "Unauthorized" } })
                 return
             }
             // 2. update members and update group
-            const old_members = {...group.members} // save old members to notify group update LATER
+            const old_members = { ...group.members } // save old members to notify group update LATER
             group.members = new_members;
-            
+
             let added_members = {}
             for (const [key, value] of Object.entries(new_members)) {
                 console.log(`${key}: ${value}`);
@@ -661,7 +807,7 @@ class Chat21Api {
             if (Object.keys(added_members).length == 0) {
                 console.debug("Same members in group, skipping setGroupMembers()");
                 if (callback) {
-                    callback({err: {message: "Same members in group, skipping setGroupMembers()"}})
+                    callback({ err: { message: "Same members in group, skipping setGroupMembers()" } })
                 }
                 return
             }
@@ -683,7 +829,7 @@ class Chat21Api {
                 winston.debug("....saved group with no member." + JSON.stringify(group))
                 this.notifyGroupUpdate(group, old_members, (err) => { // TO OLD MEMBERS
                     if (err) {
-                        console.error("notifyGroupUpdate Error" , err);
+                        console.error("notifyGroupUpdate Error", err);
                         if (callback) {
                             callback(err);
                         }
@@ -694,7 +840,7 @@ class Chat21Api {
                     console.log("*****added members", added_members)
                     for (let [member_id, value] of Object.entries(added_members)) {
                         console.debug(">>>>> JOINING MEMBER: " + member_id)
-                        this.joinGroupMessages(member_id, group, function(reply) {
+                        this.joinGroupMessages(member_id, group, function (reply) {
                             console.debug("member " + member_id + " invited on group " + group_id + " result " + reply)
                         })
                     }
@@ -707,13 +853,13 @@ class Chat21Api {
         this.chatdb.getGroup(group_id, (err, group) => {
             if (err || !group) {
                 winston.error("group found? with err", err)
-                callback({err: {message: "Not found"}})
+                callback({ err: { message: "Not found" } })
                 return
             }
             const im_owner = (group.owner === user.uid)
             const im_admin = user.roles.admin
             if (!(im_admin || im_owner)) {
-                callback({err: {message: "Unauthorized"}})
+                callback({ err: { message: "Unauthorized" } })
                 return
             }
             // 2. update group
@@ -746,13 +892,13 @@ class Chat21Api {
         this.chatdb.getGroup(group_id, (err, group) => {
             if (err || !group) {
                 winston.error("group found? with err", err)
-                callback({err: {message: "Not found"}})
+                callback({ err: { message: "Not found" } })
                 return
             }
             const im_owner = (group.owner === user.uid)
             const im_admin = user.roles.admin
             if (!(im_admin || im_owner)) {
-                callback({err: {message: "Unauthorized"}})
+                callback({ err: { message: "Unauthorized" } })
                 return
             }
             // 2. update group
@@ -781,7 +927,7 @@ class Chat21Api {
         })
     }
 
-      // AMQP COMMUNICATION
+    // AMQP COMMUNICATION
 
     start() {
         const that = this;
@@ -790,17 +936,17 @@ class Chat21Api {
         });
     }
 
-     startMQ(resolve, reject) {    
+    startMQ(resolve, reject) {
         const that = this;
         var autoRestart = process.env.AUTO_RESTART;
-        if (autoRestart===undefined || autoRestart==="true" || autoRestart===true) {
-            autoRestart=true;
+        if (autoRestart === undefined || autoRestart === "true" || autoRestart === true) {
+            autoRestart = true;
         } else {
-            autoRestart=false;
+            autoRestart = false;
         }
         winston.info("autoRestart: " + autoRestart);
 
-        
+
         winston.info("Connecting to RabbitMQ: " + process.env.RABBITMQ_URI)
         amqp.connect(process.env.RABBITMQ_URI, (err, conn) => {
             if (err) {
@@ -810,7 +956,7 @@ class Chat21Api {
                     return setTimeout(() => { that.startMQ(resolve, reject) }, 1000);
                 } else {
                     process.exit(1);
-                }                    
+                }
             }
             conn.on("error", (err) => {
                 if (err.message !== "Connection closing") {
@@ -822,32 +968,32 @@ class Chat21Api {
                 console.error("[AMQP] close");
                 if (autoRestart) {
                     console.error("[AMQP] reconnecting");
-                    return setTimeout(() => { that.startMQ(resolve, reject) }, 1000); 
+                    return setTimeout(() => { that.startMQ(resolve, reject) }, 1000);
                 } else {
                     process.exit(1);
-                }        
-                                    
+                }
+
             });
             // winston.debug("[AMQP] connected.", conn);
             that.amqpConn = conn;
-            that.whenConnected().then(function(ch) {
-                return resolve({conn: conn, ch: ch});
+            that.whenConnected().then(function (ch) {
+                return resolve({ conn: conn, ch: ch });
             });
 
-            
+
         });
-        
+
     }
-  
+
     whenConnected() {
         // winston.debug("whenConnected")
         return this.startPublisher();
     }
-  
+
     startPublisher() {
         var that = this;
         return new Promise(function (resolve, reject) {
-            that.amqpConn.createConfirmChannel( (err, ch) => {
+            that.amqpConn.createConfirmChannel((err, ch) => {
                 if (that.closeOnErr(err)) return;
                 ch.on("error", function (err) {
                     console.error("[AMQP] channel error", err.message);
@@ -859,46 +1005,46 @@ class Chat21Api {
                 // winston.debug("this.offlinePubQueue.length",that.offlinePubQueue.length)
                 if (that.offlinePubQueue.length > 0) {
 
-                    // while (true) {
-                    //     var m = this.offlinePubQueue.shift();
-                    //     if (!m) break;
-                    //     this.publish(m[0], m[1], m[2]);
-                    //   }
-
                     while (true) {
-                        winston.debug("PERICOLOOOOOOOOOOOO",that.offlinePubQueue)
-                        var [exchange, routingKey, content] = that.offlinePubQueue.shift();
-                        // if (!content) break;
-                        that.publish(routingKey, content);
-                    }
+                        var m = this.offlinePubQueue.shift();
+                        if (!m) break;
+                        this.publish(m[0], m[1], m[2]);
+                      }
+
+                    // while (true) {
+                    //     winston.debug("PERICOLOOOOOOOOOOOO", that.offlinePubQueue)
+                    //     var [exchange, routingKey, content] = that.offlinePubQueue.shift();
+                    //     // if (!content) break;
+                    //     that.publish(routingKey, content);
+                    // }
                 }
                 return resolve(ch)
             });
         });
     }
-  
+
     publish(routingKey, content, callback) {
         try {
             this.pubChannel.publish(this.exchange, routingKey, content, { persistent: true },
-            (err, ok) => {
-                if (err) {
-                    console.error("[AMQP] publish", err);
-                    this.offlinePubQueue.push([this.exchange, routingKey, content]);
-                    this.pubChannel.connection.close();
+                (err, ok) => {
+                    if (err) {
+                        console.error("[AMQP] publish", err);
+                        this.offlinePubQueue.push([this.exchange, routingKey, content]);
+                        this.pubChannel.connection.close();
+                        if (callback) {
+                            callback(err)
+                        }
 
-                    if (callback) {
-                        callback(err)
                     }
-                    
-                }
-                else {
-                    winston.debug("published to: " + routingKey + " result " + ok)
-                    if (callback) {
-                        callback(null)
+                    else {
+                        winston.debug("published to: " + routingKey + " result " + ok)
+                        if (callback) {
+                            callback(null)
+                        }
                     }
-                }
-            });
-        } catch (e) {
+                });
+        }
+        catch (e) {
             console.error("[AMQP] publish", e.message);
             this.offlinePubQueue.push([this.exchange, routingKey, content]);
             if (callback) {
@@ -906,13 +1052,13 @@ class Chat21Api {
             }
         }
     }
-  
+
     closeOnErr(err) {
         if (!err) return false;
         console.error("[AMQP] error", err);
         this.amqpConn.close();
         return true;
     }
-  }
-  
-  module.exports = { Chat21Api };
+}
+
+module.exports = { Chat21Api };
