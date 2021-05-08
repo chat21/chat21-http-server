@@ -218,7 +218,7 @@ class Chat21Api {
         const appid = group.appId
         const now = Date.now()
         const message = {
-            message_id: uuid(),
+            // message_id: uuid(),
             type: "text",
             text: joined_member_id + " added to group",
             timestamp: now,
@@ -227,7 +227,7 @@ class Chat21Api {
             sender: "system",
             recipient_fullname: group.name,
             recipient: group.uid,
-            status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
+            //status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
             attributes: {
                 subtype:"info",
                 updateconversation : true,
