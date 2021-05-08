@@ -213,39 +213,37 @@ class Chat21Api {
      * @param {*} group 
      * @param {*} callback 
      */
-    joinGroup(joined_member_id, group, callback) {
-        console.debug("SENDING 'ADDED TO GROUP' TO EACH MEMBER INCLUDING THE JOINED ONE (group:" +  group.uid + ") - members: " + JSON.stringify(group.members))
+    joinGroupMessages(joined_member_id, group, callback) {
+        console.debug("'system' sends 'added to group' to (group:" +  group.uid + ") - members: " + JSON.stringify(group.members))
         const appid = group.appId
-        for (let [member_id, value] of Object.entries(group.members)) {
-            console.debug("to member: " + member_id)
-            const now = Date.now()
-            const message = {
-                message_id: uuid(),
-                type: "text",
-                text: joined_member_id + " added to group",
-                timestamp: now,
-                channel_type: "group",
-                sender_fullname: "System",
-                sender: "system",
-                recipient_fullname: group.name,
-                recipient: group.uid,
-                status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
-                attributes: {
-                    subtype:"info",
-                    updateconversation : true,
-                    messagelabel: {
-                        key: "MEMBER_JOINED_GROUP",
-                        parameters: {
-                            member_id: joined_member_id
-                            // fullname: fullname // OPTIONAL
-                        }
+        const now = Date.now()
+        const message = {
+            message_id: uuid(),
+            type: "text",
+            text: joined_member_id + " added to group",
+            timestamp: now,
+            channel_type: "group",
+            sender_fullname: "System",
+            sender: "system",
+            recipient_fullname: group.name,
+            recipient: group.uid,
+            status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
+            attributes: {
+                subtype:"info",
+                updateconversation : true,
+                messagelabel: {
+                    key: "MEMBER_JOINED_GROUP",
+                    parameters: {
+                        member_id: joined_member_id
+                        // fullname: fullname // OPTIONAL
                     }
                 }
             }
-            console.debug("Member joined group message: " + JSON.stringify(message))
-            let inbox_of = member_id
-            let convers_with = group.uid
-            this.deliverMessage(appid, message, inbox_of, convers_with, (err) => {
+        }
+        this.sendMessageRaw(
+            appid,
+            message,
+            (err) => {
                 if (err) {
                     console.error("Error delivering message to joined member", inbox_of)
                     if (callback) {
@@ -254,14 +252,55 @@ class Chat21Api {
                     return
                 }
                 else {
-                    console.debug("DELIVERED MESSAGE TO: " + inbox_of + " CONVERS_WITH: " + convers_with)
+                    console.debug("Sent message to: " + group.uid);
                 }
-            })
-        }
+            }
+        );
+        // for (let [member_id, value] of Object.entries(group.members)) {
+        //     console.debug("to member: " + member_id)
+        //     const now = Date.now()
+            // const message = {
+            //     message_id: uuid(),
+            //     type: "text",
+            //     text: joined_member_id + " added to group",
+            //     timestamp: now,
+            //     channel_type: "group",
+            //     sender_fullname: "System",
+            //     sender: "system",
+            //     recipient_fullname: group.name,
+            //     recipient: group.uid,
+            //     status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
+            //     attributes: {
+            //         subtype:"info",
+            //         updateconversation : true,
+            //         messagelabel: {
+            //             key: "MEMBER_JOINED_GROUP",
+            //             parameters: {
+            //                 member_id: joined_member_id
+            //                 // fullname: fullname // OPTIONAL
+            //             }
+            //         }
+            //     }
+            // }
+        //     console.debug("Member joined group message: " + JSON.stringify(message))
+        //     let inbox_of = member_id
+        //     let convers_with = group.uid
+        //     this.deliverMessage(appid, message, inbox_of, convers_with, (err) => {
+        //         if (err) {
+        //             console.error("Error delivering message to joined member", inbox_of)
+        //             if (callback) {
+        //                 callback(err)
+        //             }
+        //             return
+        //         }
+        //         else {
+        //             console.debug("DELIVERED MESSAGE TO: " + inbox_of + " CONVERS_WITH: " + convers_with)
+        //         }
+        //     })
+        // }
 
         // 2. pubblish old group messages to the joined member (in the member/group-conversWith timeline)
         //const userid = group.uid
-        // const group_id = 'support-group-6066e60cc3dade4e7389d182-5be10e01-7acc-4135-bbcd-c514f9cc3f8a'
         const group_id = group.uid;
         console.debug("last messages for appid, userid, convid", appid, group_id, group_id);
         // this.chatdb.lastMessages(appid, userid, convid, 1, 200, (err, messages) => {
@@ -363,52 +402,89 @@ class Chat21Api {
                             }
                             return
                         }
-                        // if (callback) {
-                        //     callback(null);
-                        // }
-                        // old_members.sendMessage("member_id leaved the group")
-                        for (let [member_id, value] of Object.entries(old_members)) {
-                            console.debug("to member: " + member_id)
-                            const now = Date.now()
-                            const message = {
-                                message_id: uuid(),
-                                type: "text",
-                                text: removed_member_id + " removed from group",
-                                timestamp: now,
-                                channel_type: "group",
-                                sender_fullname: "System",
-                                sender: "system",
-                                recipient_fullname: group.name,
-                                recipient: group.uid,
-                                status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
-                                attributes: {
-                                    subtype:"info",
-                                    updateconversation : true,
-                                    messagelabel: {
-                                        key: "MEMBER_LEFT_GROUP",
-                                        parameters: {
-                                            member_id: removed_member_id
-                                            // fullname: fullname // OPTIONAL
-                                        }
+                        // "system" sends message "removed from group" to all group members
+                        const now = Date.now();
+                        const message = {
+                            message_id: uuid(),
+                            type: "text",
+                            text: removed_member_id + " removed from group",
+                            timestamp: now,
+                            channel_type: "group",
+                            sender_fullname: "System",
+                            sender: "system",
+                            recipient_fullname: group.name,
+                            recipient: group.uid,
+                            status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
+                            attributes: {
+                                subtype:"info",
+                                updateconversation : true,
+                                messagelabel: {
+                                    key: "MEMBER_LEFT_GROUP",
+                                    parameters: {
+                                        member_id: removed_member_id
+                                        // fullname: fullname // OPTIONAL
                                     }
                                 }
                             }
-                            console.debug("Member left group message: " + JSON.stringify(message))
-                            let inbox_of = member_id
-                            let convers_with = group.uid
-                            this.deliverMessage(group.appId, message, inbox_of, convers_with, function(err) {
+                        }
+                        this.sendMessageRaw(
+                            appid,
+                            message,
+                            (err) => {
                                 if (err) {
-                                    console.error("error delivering message to members (about the member who left)", inbox_of)
+                                    console.error("Error delivering message to members for 'leave group'", inbox_of)
                                     if (callback) {
                                         callback(err)
                                     }
                                     return
                                 }
                                 else {
-                                    console.debug("DELIVERED MESSAGE TO: " + inbox_of + " CONVERS_WITH " + convers_with)
+                                    console.debug("SENT MESSAGE TO: " + group.uid)
                                 }
-                            })
-                        }
+                            }
+                        );
+                        // for (let [member_id, value] of Object.entries(old_members)) {
+                        //     console.debug("to member: " + member_id)
+                        //     const now = Date.now()
+                            // const message = {
+                            //     message_id: uuid(),
+                            //     type: "text",
+                            //     text: removed_member_id + " removed from group",
+                            //     timestamp: now,
+                            //     channel_type: "group",
+                            //     sender_fullname: "System",
+                            //     sender: "system",
+                            //     recipient_fullname: group.name,
+                            //     recipient: group.uid,
+                            //     status: 100, // MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT,
+                            //     attributes: {
+                            //         subtype:"info",
+                            //         updateconversation : true,
+                            //         messagelabel: {
+                            //             key: "MEMBER_LEFT_GROUP",
+                            //             parameters: {
+                            //                 member_id: removed_member_id
+                            //                 // fullname: fullname // OPTIONAL
+                            //             }
+                            //         }
+                            //     }
+                            // }
+                        //     console.debug("Member left group message: " + JSON.stringify(message))
+                        //     let inbox_of = member_id
+                        //     let convers_with = group.uid
+                        //     this.deliverMessage(group.appId, message, inbox_of, convers_with, function(err) {
+                        //         if (err) {
+                        //             console.error("error delivering message to members (about the member who left)", inbox_of)
+                        //             if (callback) {
+                        //                 callback(err)
+                        //             }
+                        //             return
+                        //         }
+                        //         else {
+                        //             console.debug("DELIVERED MESSAGE TO: " + inbox_of + " CONVERS_WITH " + convers_with)
+                        //         }
+                        //     })
+                        // }
                         callback(null);
                     })
                 })
@@ -501,6 +577,57 @@ class Chat21Api {
       });
     }
 
+    sendMessageRaw(
+        appid, // mandatory
+        outgoing_message, // mandatory
+        callback // optional | null
+      ) {
+        if (!appid) {
+            callback({message: "appid is can't be null"});
+            return
+          }
+
+          if (!outgoing_message.sender) {
+            callback({message: "sender is mandatory"});
+            return
+          }
+          if (!outgoing_message.recipient) {
+            callback({message: "recipient is mandatory"});
+            return
+          }
+    //   const outgoing_message = {
+    //     text: text,
+    //     type: type,
+    //     recipient_fullname: recipient_fullname,
+    //     sender_fullname: sender_fullname,
+    //     channel_type: channel_type? channel_type : "direct",
+    //   }
+    //   if (attributes) {
+    //     outgoing_message.attributes = attributes
+    //   }
+    //   if (metadata) {
+    //     outgoing_message.metadata = metadata
+    //   }
+    //   if (timestamp) {
+    //     outgoing_message.timestamp = timestamp
+    //   }
+      winston.debug("outgoing_message: " + JSON.stringify(outgoing_message))
+      let dest_topic = `apps.${appid}.users.${outgoing_message.sender}.messages.${outgoing_message.recipient}.outgoing`
+      const message_payload = JSON.stringify(outgoing_message)
+      this.publish(dest_topic, Buffer.from(message_payload), function(err) {
+        winston.debug("PUBLISHED: SENDING RAW MESSAGE TO TOPIC: " + dest_topic)
+        if (err) {
+          winston.error("Error sending raw message on topic: " + dest_topic, err)
+          if (callback) {
+            callback(err)
+            return
+          }
+        }
+        winston.verbose("Message sent to queue: " + JSON.stringify(outgoing_message) + " to "+ dest_topic);
+        callback(null)
+      });
+    }
+
     setGroupMembers(user, new_members, group_id, callback) {
         console.log("setGroupMembers user:", user, " members:", new_members, " group_id:", group_id)
         this.chatdb.getGroup(group_id, (err, group) => {
@@ -567,7 +694,7 @@ class Chat21Api {
                     console.log("*****added members", added_members)
                     for (let [member_id, value] of Object.entries(added_members)) {
                         console.debug(">>>>> JOINING MEMBER: " + member_id)
-                        this.joinGroup(member_id, group, function(reply) {
+                        this.joinGroupMessages(member_id, group, function(reply) {
                             console.debug("member " + member_id + " invited on group " + group_id + " result " + reply)
                         })
                     }
