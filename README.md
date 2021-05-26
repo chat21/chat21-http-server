@@ -2,22 +2,6 @@
 
 Chat21 native REST API server
 
-== Send a Message ==
-
-curl --location --request POST 'http://localhost:8004/api/tilechat/messages' \
---header 'Authorization: JWT-TOKEN' \
---header 'Content-Type: application/json' \
---data-raw '{
- "sender_id": "SENDER-UUID",
- "sender_fullname": "SENDER FULLNAME",
- "recipient_id": "RECIPIENT-UUID",
- "recipient_fullname": "RECIPIENT FULLNAME",
- "text": "hello",
- "type": "text",
- "channel_type": "direct"
-}'
-
-
 # REST API
 Below are described the REST API of Chat21
 
