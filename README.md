@@ -1,19 +1,145 @@
-# chat21-http-server
+# Chat21 HTTP API Application
 
 Chat21 native REST API server
-
 
 == Send a Message ==
 
 curl --location --request POST 'http://localhost:8004/api/tilechat/messages' \
---header 'Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIxMGI4ZGFiMi00YzMzLTQzMTMtYTIzZS01ZDMxN2MwYWJmOTEiLCJzdWIiOiI2ZDAxMW42MmlyMDk3YzAxNDNjYzQyZGMiLCJzY29wZSI6WyJyYWJiaXRtcS5yZWFkOiovKi9hcHBzLnRpbGVjaGF0LnVzZXJzLjZkMDExbjYyaXIwOTdjMDE0M2NjNDJkYy4qIiwicmFiYml0bXEud3JpdGU6Ki8qL2FwcHMudGlsZWNoYXQudXNlcnMuNmQwMTFuNjJpcjA5N2MwMTQzY2M0MmRjLioiLCJyYWJiaXRtcS5jb25maWd1cmU6Ki8qLyoiXSwiY2xpZW50X2lkIjoiNmQwMTFuNjJpcjA5N2MwMTQzY2M0MmRjIiwiY2lkIjoiNmQwMTFuNjJpcjA5N2MwMTQzY2M0MmRjIiwiYXpwIjoiNmQwMTFuNjJpcjA5N2MwMTQzY2M0MmRjIiwidXNlcl9pZCI6IjZkMDExbjYyaXIwOTdjMDE0M2NjNDJkYyIsImFwcF9pZCI6InRpbGVjaGF0IiwiaWF0IjoxNjE4OTg4ODQ4LCJleHAiOjE5MzAwMjg4NDgsImF1ZCI6WyJyYWJiaXRtcSIsIjZkMDExbjYyaXIwOTdjMDE0M2NjNDJkYyJdLCJraWQiOiJ0aWxlZGVzay1rZXkiLCJ0aWxlZGVza19hcGlfcm9sZXMiOiJ1c2VyIn0.JRH9JleyzvTCgcM-Hd62bml10TSe9lEWG5Pv19-AxHY' \
+--header 'Authorization: JWT-TOKEN' \
 --header 'Content-Type: application/json' \
 --data-raw '{
- "sender_id": "04-ANDREASPONZIELLO",
- "sender_fullname": "Andrea Sponziello",
- "recipient_id": "03-ANDREALEO",
-    "recipient_fullname": "Andrea Leo",
-    "text": "hello",
-    "type": "text",
-    "channel_type": "direct"
+ "sender_id": "SENDER-UUID",
+ "sender_fullname": "SENDER FULLNAME",
+ "recipient_id": "RECIPIENT-UUID",
+ "recipient_fullname": "RECIPIENT FULLNAME",
+ "text": "hello",
+ "type": "text",
+ "channel_type": "direct"
 }'
+
+
+# REST API
+Below are described the REST API of Chat21
+
+## Authentication
+
+Before using these APIs you need an authentication JWT token
+
+### JWT Authentication
+Coming soon
+
+## Send a message
+
+== Send a Message ==
+
+curl --location --request POST 'http://localhost:8004/api/APP_ID/messages' \
+--header 'Authorization: JWT-TOKEN' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+ "sender_fullname": "SENDER FULLNAME",
+ "recipient_id": "RECIPIENT-UUID",
+ "recipient_fullname": "RECIPIENT FULLNAME",
+ "text": "hello",
+ "type": "text",
+ "channel_type": "direct"
+}'
+
+```
+Where :
+- JWT-TOKEN: the authorization JWT token
+- sender_fullname: is the Sender Fullname. Ex: Andrea Leo
+- recipient_id: it's the recipient id of the message. The recipient id is the user id for direct message and the group id for group messaging.
+- recipient_fullname: is the Recipient Fullname. Ex: Andrea Sponziello
+- text: it's the message text
+- channel_type: it's the channel type. "direct" value for one-to-one direct message and "group" for group messaging. Available values: direct (default) and group.
+- type: it's the message type. "text" value for textual message and "image" for sending image message(you must set metadata field). Available values: text (default) and image.
+- ATTRIBUTES:  it's the message custom attributes. Example: attributes = {"custom_attribute1": "value1"}. 
+- METADATA: it's the image properties: src is the absolute source path of the image, width is the image width, height is the image height. Example: metadata = { "src": "https://www.tiledesk.com/wp-content/uploads/2018/03/tiledesk-logo.png", "width": 200, "height": 200 }
+- APP_ID: It's the appid usend on multitenant environment. Use  "default" as default value
+
+## Create a Group
+
+Create a chat user's group making the following POST call :
+
+```
+  curl -X POST \
+      -H 'Content-Type: application/json' \
+      -H "Authorization: JWT-TOKEN" \
+      -d '{"group_name": "<GROUP_NAME>", "group_members": {"<MEMBER_ID>":1}}' \
+      'http://localhost:8004/api/<APP_ID>/groups'
+```
+
+Where:
+- GROUP_NAME: it's the new group name
+- MEMBER_ID: it's the user ids of the group members
+- APP_ID: It's the appid usend on multitenant environment. Use  "default" as default value
+
+## Join a Group
+
+With this API the user can join (become a member) of an existing group:
+
+```
+  curl -X POST \
+      -H 'Content-Type: application/json' \
+      -H "Authorization: JWT-TOKEN" \
+      -d '{"member_id": "<MEMBER_ID>"}' \
+      'http://localhost:8004/api/<APP_ID>/groups/<GROUP_ID>/members'
+```
+
+
+Where :
+- MEMBER_ID: it's the user id of the user you want to joing (become a member)
+- APP_ID: It's the appid usend on multitenant environment. Use  "default" as default value
+- GROUP_ID: it's the existing group id
+
+## Leave a Group
+
+With this API the user can leave an existing group:
+
+```
+  curl -X DELETE \
+      -H 'Content-Type: application/json' \
+      -H "Authorization: JWT-TOKEN" \
+      -d '{"member_id": "<MEMBER_ID>"}' \
+      'http://localhost:8004/api/<APP_ID>/groups/<GROUP_ID>/members/<MEMBERID'
+```
+
+Where :
+- APP_ID: It's the appid usend on multitenant environment. Use  "default" as default value
+- GROUP_ID: it's the existing group id
+- MEMBER_ID: it's the user id of the user you want to leave a group
+
+## Set Group members
+
+With this API you can set the group members
+
+```
+    curl -X PUT \
+      -H 'Content-Type: application/json' \
+      -H "Authorization: JWT-TOKEN" \
+      -d '{"members": {"<member_id1>":1},{"<member_id2>":1}}' \
+      'http://localhost:8004/api/<APP_ID>/groups/<GROUP_ID>/members'
+```
+
+Where :
+- MEMBER_IDs: it's the user ids of the group members
+- APP_ID: It's the appid usend on multitenant environment. Use  "default" as default value
+- GROUP_ID: it's the existing group id
+
+## Archive or delete a conversation
+
+Archive or delete a conversation from the personal timeline specified by a RECIPIENT_ID
+
+```
+    curl  -X DELETE \
+       -H 'Content-Type: application/json' \
+       -H "Authorization: JWT-TOKEN" \
+       http://localhost:8004/api/<APP_ID>/conversations/<RECIPIENT_ID>?delete=<BOOLEAN_VALUE>
+```
+
+Where :
+- APP_ID: It's the appid usend on multitenant environment. Use  "default" as default value
+- RECIPIENT_ID: it's the recipient id
+- delete:  (Optional) if true permanently deletes the conversation, if false archives the conversation
+
+
