@@ -32,6 +32,7 @@ Coming soon
 
 == Send a Message ==
 
+```
 curl --location --request POST 'http://localhost:8004/api/APP_ID/messages' \
 --header 'Authorization: JWT-TOKEN' \
 --header 'Content-Type: application/json' \
@@ -45,6 +46,7 @@ curl --location --request POST 'http://localhost:8004/api/APP_ID/messages' \
 }'
 
 ```
+
 Where :
 - JWT-TOKEN: the authorization JWT token
 - sender_fullname: is the Sender Fullname. Ex: Andrea Leo
