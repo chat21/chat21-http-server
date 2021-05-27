@@ -3,6 +3,7 @@
 Chat21 native REST API server
 Visit <a href='http://bing.com'>Bing</a>.
 
+<b>Test</b>
 # REST API
 Below are described the REST API of Chat21
 
