@@ -102,13 +102,13 @@ class Chat21Api {
                         callback(err);
                     }
                     else {
-                        console.debug("SENDING 'ADDED TO GROUP' FOR EACH MEMBER TO EACH MEMBER...", group);
+                        console.debug("SENDING 'MEMBER_JOINED_GROUP' FOR EACH MEMBER TO EACH MEMBER...", group);
                         const appid = group.appId
                         for (let [member_id, value] of Object.entries(group.members)) {
                             console.debug("Sending: '" + member_id + " added to group on creation', to the group: " + group.uid);
                             const message = {
                                 type: "text",
-                                text: member_id + " added to group on creation",
+                                text: member_id + " joined group on creation",
                                 timestamp: Date.now(),
                                 channel_type: "group",
                                 sender_fullname: "System",

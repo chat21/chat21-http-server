@@ -1,4 +1,5 @@
 require('dotenv').config();
+var url = require('url');
 const express = require("express") // // //
 const bodyParser = require("body-parser")
 const winston = require("./winston");
@@ -33,6 +34,12 @@ app.use(function (req, res, next) {
 });
 
 app.use(function (req, res, next) {
+  var urlobj = url.parse(req.originalUrl);
+  console.log("URL", urlobj)
+  if (urlobj.pathname === '/') {
+    next();
+    return;
+  }
   const jwt = decodejwt(req)
   if (jwt) {
     // adds "user" to req
