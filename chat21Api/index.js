@@ -939,7 +939,8 @@ class Chat21Api {
     startMQ(resolve, reject) {
         const that = this;
         var autoRestart = process.env.AUTO_RESTART;
-        if (autoRestart === "true" || autoRestart === true) {
+
+        if (autoRestart === undefined || autoRestart === "true" || autoRestart === true) {
             autoRestart = true;
         } else {
             autoRestart = false;
