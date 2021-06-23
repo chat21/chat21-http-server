@@ -35,7 +35,6 @@ app.use(function (req, res, next) {
 
 app.use(function (req, res, next) {
   var urlobj = url.parse(req.originalUrl);
-  console.log("URL", urlobj)
   if (urlobj.pathname === '/') {
     next();
     return;
