@@ -1,8 +1,8 @@
 {
   "name": "@chat21/chat21-http-server",
-  "version": "0.1.2",
-  "description": "",
-  "main": "./bin/www",
+  "version": "0.1.10",
+  "description": "Chat21 HTTP APIs",
+  "main": "index.js",
   "dependencies": {
     "amqplib": "^0.5.6",
     "app-root-path": "^3.0.0",
