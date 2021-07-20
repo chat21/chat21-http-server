@@ -1,3 +1,12 @@
+## v0.1.12
+
+- log fix
+
+## v0.1.11
+
+- updated TiledeskLogger to v0.1.1
+- exported logger
+
 ## v0.1.9
 - fixed: logger.error("[AMQP] conn error:", err.message) -> logger.error("[AMQP] conn error:", err) Now debug is finally easy with AMQP!
 - fixed: "app_id is not defined" (on some tests)

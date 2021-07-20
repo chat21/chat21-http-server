@@ -8,7 +8,7 @@ var cors = require('cors');
 var mongodb = require("mongodb");
 const { ChatDB } = require('./chatdb/index.js');
 const { Chat21Api } = require('./chat21Api/index.js');
-const logger = require('./tiledesk-logger').logger;
+let logger = require('./tiledesk-logger').logger;
 
 const jwtKey = process.env.JWT_KEY || "tokenKey"
 const BASEURL = '/api'
@@ -73,7 +73,7 @@ app.get("/verify", (req, res) => {
 })
 
 app.get(BASEURL + "/:appid/:userid/conversations", (req, res) => {
-  console.debug("HTTP: getting /:appid/:userid/conversations")
+  logger.debug("HTTP: getting /:appid/:userid/conversations")
   if (!authorize(req, res)) {
     logger.debug("Unauthorized!")
     return
@@ -99,7 +99,7 @@ app.get(BASEURL + "/:appid/:userid/conversations", (req, res) => {
 })
 
 app.get(BASEURL + "/:appid/:userid/conversations/archived", (req, res) => {
-  console.debug("HTTP: getting /:appid/:userid/archived_conversations")
+  logger.debug("HTTP: getting /:appid/:userid/archived_conversations")
   if (!authorize(req, res)) {
     logger.debug("Unauthorized!")
     return
@@ -135,7 +135,7 @@ function authorize(req, res) {
 }
 
 app.get(BASEURL + "/:appid/:userid/archived_conversations", (req, res) => {
-  console.debug("HTTP: GET /:appid/:userid/archived_conversations")
+  logger.debug("HTTP: GET /:appid/:userid/archived_conversations")
   if (!authorize(req, res)) {
     return
   }
@@ -158,7 +158,7 @@ app.get(BASEURL + "/:appid/:userid/archived_conversations", (req, res) => {
 })
 
 app.get(BASEURL + "/:appid/:userid/conversations/:conversWith", (req, res) => {
-  console.debug("HTTP: GET /:appid/:userid/conversations/:conversWith");
+  logger.debug("HTTP: GET /:appid/:userid/conversations/:conversWith");
   if (!authorize(req, res)) {
     return
   }
@@ -200,7 +200,7 @@ function conversations(req, archived, callback) {
 }
 
 app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) => {
-    console.debug("HTTP: getting /:appid/:userid/messages")
+    logger.debug("HTTP: getting /:appid/:userid/messages")
     const appid = req.params.appid
     const userid = req.params.userid
     const convid = req.params.convid
@@ -231,7 +231,7 @@ app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) =
 
 /** Delete a conversation */
 app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
-  console.debug('HTTP: delete: Conversation. req.params:', req.params, 'req.body:', req.body)
+  logger.debug('HTTP: delete: Conversation. req.params:', req.params, 'req.body:', req.body)
 
   if (!req.params.recipient_id) {
     res.status(405).send('recipient_id is not present!');
@@ -277,7 +277,7 @@ app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
  * This endpoint supports CORS.
  */
 app.post(BASEURL + '/:app_id/messages', (req, res) => {
-  console.debug('HTTP: Sends a message:', JSON.stringify(req.body));
+  logger.debug('HTTP: Sends a message:', JSON.stringify(req.body));
   if (!req.body.sender_fullname) {
       logger.error('Sender Fullname is mandatory');
       res.status(405).send('Sender Fullname is mandatory');
@@ -362,8 +362,8 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
 
 /** Create a group */
 app.post(BASEURL + '/:appid/groups', (req, res) => {
-  console.debug("HTTP: Create a group /:appid/groups")
-  console.debug("appId:" + req.user.appId + ", user:" + req.user.uid)
+  logger.debug("HTTP: Create a group /:appid/groups")
+  logger.debug("appId:" + req.user.appId + ", user:" + req.user.uid)
   if (!req.user || !req.user.appId) {
     res.status(401).end()
     return
@@ -438,7 +438,7 @@ function newGroupId() {
 
 /** Get group data */
 app.get(BASEURL + '/:appid/groups/:group_id', (req, res) => {
-  console.debug("HTTP: Get group data. getting /:appid/groups/group_id")
+  logger.debug("HTTP: Get group data. getting /:appid/groups/group_id")
   if (!authorize(req, res)) {
     logger.debug("Unauthorized!")
     return
@@ -485,9 +485,9 @@ app.get(BASEURL + '/:appid/groups/:group_id', (req, res) => {
 
 /** Join a group */
 app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
-  console.debug('HTTP: Join a group. adds a member to a group', req.body, req.params);
+  logger.debug('HTTP: Join a group. adds a member to a group', req.body, req.params);
   if (!authorize(req, res)) {
-    console.debug("Unauthorized")
+    logger.debug("Unauthorized")
     res.status(401).send('Unauthorized');
     return
   }
@@ -498,13 +498,13 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
   const joined_member_id = req.body.member_id;
   const group_id = req.params.group_id;
   // const app_id = req.params.appid;
-  console.debug('joined_member_id', joined_member_id);
-  console.debug('group_id', group_id);
-  // console.debug('chatapi', chatapi);
+  logger.debug('joined_member_id', joined_member_id);
+  logger.debug('group_id', group_id);
+  // logger.debug('chatapi', chatapi);
   chatapi.addMemberToGroupAndNotifyUpdate(req.user, joined_member_id, group_id, function(err, group) {
-    console.debug("THE GROUP:", group)
+    logger.debug("THE GROUP:", group)
     if (err) {
-      console.error("An error occurred while a member was joining the group", err)
+      logger.error("An error occurred while a member was joining the group", err)
       const reply = {
         success: false,
         err: (err) ? err : "An error occurred while a member was joining the group",
@@ -513,7 +513,7 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
       res.status(reply.http_status).send(reply)
     }
     else if (group) {
-      console.debug("Notifying to other members and coping old group messages to new user timeline...")
+      logger.debug("Notifying to other members and coping old group messages to new user timeline...")
       let message_label = {
         key: "MEMBER_JOINED_GROUP",
         parameters: {
@@ -522,9 +522,9 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
         }
       };
       chatapi.joinGroupMessages(joined_member_id, group, message_label, function(err) {
-        console.debug("member joined. Notified to other members and copied old group messages to new user timeline");
+        logger.debug("member joined. Notified to other members and copied old group messages to new user timeline");
         if (err) {
-          console.error("An error occurred while joining member", err);
+          logger.error("An error occurred while joining member", err);
           const reply = {
             success: false,
             err: err,
@@ -543,7 +543,7 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
         err: "Group not found",
         http_status: 405
       }
-      console.error("Error encountered:", reply);
+      logger.error("Error encountered:", reply);
       res.status(reply.http_status).send(reply);
     }
   })
@@ -551,7 +551,7 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
 
 /** Set members of a group */
 app.put(BASEURL + '/:app_id/groups/:group_id/members', (req, res) => {
-  console.debug('HTTP: Set members of a group with:', req.body);
+  logger.debug('HTTP: Set members of a group with:', req.body);
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
@@ -584,7 +584,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/members', (req, res) => {
 /** Leave a group */
 app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', (req, res) => {
   // app.delete('/groups/:group_id/members/:member_id', (req, res) => {
-  console.debug('HTTP: Leave group');
+  logger.debug('HTTP: Leave group');
   if (!req.params.member_id) {
       res.status(405).send('member_id is mandatory');
       return
@@ -617,7 +617,7 @@ app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', (req, res) 
 
 /** Update group (just group name) */
 app.put(BASEURL + '/:app_id/groups/:group_id', (req, res) => {
-  console.debug('HTTP: Update group (just group name)');
+  logger.debug('HTTP: Update group (just group name)');
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
@@ -645,7 +645,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id', (req, res) => {
 
 /** Update group custom attributes */
 app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
-  console.debug('HTTP: Update group custom attributes for group:' + req.params.group_id + "body:" + JSON.stringify(req.body));
+  logger.debug('HTTP: Update group custom attributes for group:' + req.params.group_id + "body:" + JSON.stringify(req.body));
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
@@ -710,11 +710,11 @@ function decodejwt(req) {
 async function startAMQP(config) {
   let rabbitmq_uri = null;
   if (config && config.rabbitmq_uri) {
-    // console.log("rabbitmq_uri found in config", config)
+    // logger.log("rabbitmq_uri found in config", config)
     rabbitmq_uri = config.rabbitmq_uri;
   }
   else if (process.env.RABBITMQ_URI) {
-    // console.log("rabbimq_uri found in env")
+    // logger.log("rabbimq_uri found in env")
     rabbitmq_uri = process.env.RABBITMQ_URI;
   }
   else {
@@ -722,20 +722,20 @@ async function startAMQP(config) {
   }
   
   const mongouri = process.env.MONGODB_URI || "mongodb://localhost:27017/chatdb";
-  console.log("Connecting to MongoDB: " + mongouri);
+  logger.log("Connecting to MongoDB: " + mongouri);
 
   // Create a database variable outside of the
   // database connection callback to reuse the connection pool in the app.
   var db;
   
   var client = await mongodb.MongoClient.connect(mongouri, { useNewUrlParser: true, useUnifiedTopology: true })
-  console.log("MongoDB connected.")
+  logger.log("MongoDB connected.")
   db = client.db();
   chatdb = new ChatDB({database: db})
   
   chatapi = new Chat21Api({exchange: 'amq.topic', database: chatdb, rabbitmq_uri: rabbitmq_uri});
   var amqpConnection = await chatapi.start();
-  console.log("[AMQP] connected.");
+  logger.log("[AMQP] connected.");
 }
 
 // let rabbitmq_uri;
@@ -754,4 +754,4 @@ async function startAMQP(config) {
 
 
 
-module.exports = {app: app, startAMQP: startAMQP};
+module.exports = {app: app, startAMQP: startAMQP, logger: logger};

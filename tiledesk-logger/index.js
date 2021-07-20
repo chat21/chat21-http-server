@@ -1,13 +1,14 @@
 /* 
-    ver 0.1
+    ver 0.1.1
     Andrea Sponziello - (c) Tiledesk.com
 */
 
 require('dotenv').config();
 
 const LEVEL_DEBUG = 0
-const LEVEL_INFO = 1
-const LEVEL_ERROR = 2
+const LEVEL_VERBOSE = 1
+const LEVEL_INFO = 2
+const LEVEL_ERROR = 3
 const LEVEL_LOG = LEVEL_DEBUG
 
 /**
@@ -21,10 +22,23 @@ class TiledeskLogger {
    * const logger = require('tiledesk-logger');
    */
   
-  constructor() {
-    this.levels = {'DEBUG': LEVEL_DEBUG, 'ERROR': LEVEL_ERROR, 'INFO': LEVEL_INFO, 'LOG': LEVEL_LOG};
-    this.logLevel = this.levels[process.env.LOG_LEVEL] || LEVEL_DEBUG
-    // console.log("actual logLevel", this.logLevel)
+  constructor(log_level) {
+    this.levels = {'DEBUG': LEVEL_DEBUG, 'VERBOSE':LEVEL_VERBOSE, 'ERROR': LEVEL_ERROR, 'INFO': LEVEL_INFO, 'LOG': LEVEL_LOG};
+    if (log_level) {
+      this.logLevel = this.levels[log_level.toUpperCase()] || LEVEL_DEBUG
+    }
+    else if (process.env.LOG_LEVEL) {
+      this.logLevel = this.levels[process.env.LOG_LEVEL.toUpperCase()] || LEVEL_DEBUG
+    }
+    else {
+      this.logLevel = LEVEL_DEBUG
+    }
+  }
+
+  setLog(log_level) {
+    if (log_level) {
+      this.logLevel = this.levels[log_level.toUpperCase()];
+    }
   }
 
   debug(...args) {
@@ -39,6 +53,12 @@ class TiledeskLogger {
     }
   }
 
+  verbose(...args) {
+    if (this.logLevel <= LEVEL_VERBOSE) {
+      console.log.apply(console,args)
+    }
+  }
+
   info(...args) {
     if (this.logLevel <= LEVEL_INFO) {
       console.info.apply(console,args)
@@ -46,13 +66,11 @@ class TiledeskLogger {
   }
 
   error(...args) {
-    // if (this.logLevel <= LEVEL_ERROR) {
+    if (this.logLevel <= LEVEL_ERROR) {
       console.error.apply(console,args)
-    // }
+    }
   }
 
 }
 
-
-
-module.exports.logger = new TiledeskLogger();
+module.exports = {logger: new TiledeskLogger(), TiledeskLogger: TiledeskLogger};
