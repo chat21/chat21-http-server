@@ -1000,7 +1000,7 @@ class Chat21Api {
         //amqp.connect(process.env.RABBITMQ_URI, (err, conn) => {
         amqp.connect(this.rabbitmq_uri, (err, conn) => {
             if (err) {
-                logger.error("[AMQP]", err.message);
+                logger.error("[AMQP]", err);
                 if (autoRestart) {
                     logger.error("[AMQP] reconnecting");
                     return setTimeout(() => { that.startMQ(resolve, reject) }, 1000);
@@ -1046,7 +1046,7 @@ class Chat21Api {
             that.amqpConn.createConfirmChannel((err, ch) => {
                 if (that.closeOnErr(err)) return;
                 ch.on("error", function (err) {
-                    logger.error("[AMQP] channel error", err.message);
+                    logger.error("[AMQP] channel error", err);
                 });
                 ch.on("close", function () {
                     logger.error("[AMQP] channel closed");
@@ -1056,7 +1056,7 @@ class Chat21Api {
                 if (that.offlinePubQueue.length > 0) {
 
                     while (true) {
-                        var m = this.offlinePubQueue.shift();
+                        var m = that.offlinePubQueue.shift();
                         if (!m) break;
                         this.publish(m[0], m[1], m[2]);
                       }
@@ -1101,11 +1101,11 @@ class Chat21Api {
                     }
                 });
         }
-        catch (e) {
-            logger.error("[AMQP] publish error.", e.message);
+        catch (err) {
+            logger.error("[AMQP] publish error.", err);
             this.offlinePubQueue.push([this.exchange, routingKey, content]);
             if (callback) {
-                callback(e)
+                callback(err)
             }
         }
     }
