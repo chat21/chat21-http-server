@@ -1,3 +1,7 @@
+## v0.1.14
+
+- fixed: in startAMQP(), if mongodb doesn't connect => process.exit(1)
+
 ## v0.1.12
 
 - log fix

@@ -727,8 +727,14 @@ async function startAMQP(config) {
   // Create a database variable outside of the
   // database connection callback to reuse the connection pool in the app.
   var db;
-  
-  var client = await mongodb.MongoClient.connect(mongouri, { useNewUrlParser: true, useUnifiedTopology: true })
+  var client;
+  try {
+    client = await mongodb.MongoClient.connect(mongouri, { useNewUrlParser: true, useUnifiedTopology: true })
+  }
+  catch(error) {
+    logger.error("(ChatHttpServer) An error occurred during connection to MongoDB:", error);
+    process.exit(1);
+  }
   logger.log("MongoDB connected.")
   db = client.db();
   chatdb = new ChatDB({database: db})
