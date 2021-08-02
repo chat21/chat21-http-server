@@ -1,3 +1,8 @@
+
+## v0.1.15
+
+- fixed: now setGroupMembers works the right way, sending group-update notifications to original group members
+
 ## v0.1.14
 
 - fixed: in startAMQP(), if mongodb doesn't connect => process.exit(1)

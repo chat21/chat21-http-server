@@ -812,13 +812,13 @@ class Chat21Api {
                 return
             }
             // 2. update members and update group
-            const old_members = { ...group.members } // save old members to notify group update LATER
+            const original_members = { ...group.members } // save old members to notify group update LATER
             group.members = new_members;
 
             let added_members = {}
             for (const [key, value] of Object.entries(new_members)) {
                 logger.log(`${key}: ${value}`);
-                if (old_members[key]) {
+                if (original_members[key]) {
                     logger.log("member alredy present", key)
                 }
                 else {
@@ -848,18 +848,18 @@ class Chat21Api {
                     }
                     return
                 }
-                logger.debug("....saved group with no member." + JSON.stringify(group))
-                let message_label = {
-                    key: "MEMBER_JOINED_GROUP",
-                    parameters: {
-                        member_id: joined_member_id
-                        // fullname: fullname // OPTIONAL
-                    }
-                };
-                let notification = {
-                    messagelabel: message_label
-                };
-                this.notifyGroupUpdate(group, old_members, notification, (err) => { // TO OLD MEMBERS
+                // // FOR EACH OLD MEMBER NOTIFY: FOR EACH NEW MEMBER NOTIFY "NEW MEMBER ADDED TO GROUP", OLD
+                // let message_label = {
+                //     key: "MEMBER_JOINED_GROUP",
+                //     parameters: {
+                //         member_id: joined_member_id
+                //         // fullname: fullname // OPTIONAL
+                //     }
+                // };
+                // let notification = {
+                //     messagelabel: message_label
+                // };
+                this.notifyGroupUpdate(group, original_members, null, (err) => { // TO ORIGINAL MEMBERS
                     if (err) {
                         logger.error("notifyGroupUpdate Error", err);
                         if (callback) {
@@ -872,7 +872,7 @@ class Chat21Api {
                     logger.log("*****added members", added_members)
                     for (let [member_id, value] of Object.entries(added_members)) {
                         logger.debug(">>>>> JOINING MEMBER: " + member_id)
-                        this.joinGroupMessages(member_id, group, message_label, function (reply) {
+                        this.joinGroupMessages(member_id, group, null, function (reply) {
                             logger.debug("member " + member_id + " invited on group " + group_id + " result " + reply)
                         })
                     }
