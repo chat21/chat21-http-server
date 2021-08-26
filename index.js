@@ -37,6 +37,7 @@ app.use(function (req, res, next) {
     return;
   }
   const jwt = decodejwt(req)
+  console.log("jwt:", jwt)
   if (jwt) {
     // adds "user" to req
     req['user'] = {
@@ -360,7 +361,7 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
 // **************** GROUPS *****************
 // *****************************************
 
-/** Create a group */
+/** Create group */
 app.post(BASEURL + '/:appid/groups', (req, res) => {
   logger.debug("HTTP: Create a group /:appid/groups")
   logger.debug("appId:" + req.user.appId + ", user:" + req.user.uid)
@@ -676,7 +677,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
 // ********************************************************
 
 function decodejwt(req) {
-    // logger.debug(req.headers)
+    logger.debug(req.headers)
     var token = null;
     if (req.headers["authorization"]) {
       token = req.headers["authorization"]
@@ -693,7 +694,7 @@ function decodejwt(req) {
     else {
       return null;
     }
-    // logger.debug("token:", token)
+    logger.debug("token:", token)
     var decoded = null
     try {
         decoded = jwt.verify(token, jwtKey);

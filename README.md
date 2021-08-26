@@ -129,3 +129,10 @@ Where :
 - delete:  (Optional) if true permanently deletes the conversation, if false archives the conversation
 
 
+## Docker deploy...
+
+build -t chat21/chat21-http-server:latest .
+
+docker run  chat21/chat21-server:latest
+
+docker push chat21/chat21-http-server:latest
