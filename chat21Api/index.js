@@ -309,6 +309,8 @@ class Chat21Api {
                             let notification = {
                                 messagelabel: message_label
                             }
+
+
                             // logger.log("qiooooooo4444444452222333333")
                             // let message = {
                             //     type: "text",
@@ -341,6 +343,8 @@ class Chat21Api {
                             //         }
                             //     }
                             // );
+
+
                             logger.debug("group updated with new joined member.")
                             this.notifyGroupUpdate(group, group.members, notification, (err) => {
                                 logger.log("PUBLISHED 'UPDATE GROUP'")
@@ -442,7 +446,7 @@ class Chat21Api {
             message,
             (err) => {
                 if (err) {
-                    logger.error("Error delivering message to joined member", inbox_of)
+                    logger.error("Error delivering message to joined member", err);
                     if (callback) {
                         callback(err)
                     }
