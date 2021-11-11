@@ -1,5 +1,9 @@
 # Chat21 HTTP API Application
 
+> ***🚀 Do you want to install Tiledesk on your server with just one click?***
+> 
+> ***Use [Docker Compose Tiledesk installation](https://github.com/Tiledesk/tiledesk-deployment/blob/master/docker-compose/README.md) guide***
+
 Chat21 native REST API server
 
 # REST API
