@@ -1,6 +1,6 @@
 
 ## v0.1.15
-
+- added push notifications management
 
 - fixed: now setGroupMembers works the right way, sending group-update notifications to original group members
 

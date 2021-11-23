@@ -26,6 +26,7 @@ class ChatDB {
     this.messages_collection = 'messages'
     this.conversations_collection = 'conversations'
     this.groups_collection = 'groups'
+    this.instances_collection = 'instances'
     this.db.collection(this.messages_collection).createIndex(
       { 'timelineOf':1, 'conversWith': 1 }
     );
@@ -34,6 +35,9 @@ class ChatDB {
     );
     this.db.collection(this.groups_collection).createIndex(
       { 'uid':1 }
+    );
+    this.db.collection(this.instances_collection).createIndex(
+      { 'user_id':1 }
     );
   }
 
@@ -170,6 +174,19 @@ class ChatDB {
       else {
         if (callback) {
           callback(null, docs)
+        }
+      }
+    });
+  }
+
+  saveAppInstance(instance, callback) {
+    this.db.collection(this.instances_collection).updateOne( { instance_id: instance.instance_id }, { $set: instance}, { upsert: true }, function(err) {
+      if (err) {
+        callback(err);
+      }
+      else {
+        if (callback) {
+          callback(null);
         }
       }
     });
