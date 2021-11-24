@@ -753,6 +753,87 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
   )
 });
 
+/**
+ * Send push notification for a new message.
+ * Admin users only
+ * This endpoint supports CORS.
+ */
+ app.post(BASEURL + '/:app_id/notify', (req, res) => {
+  logger.debug('HTTP: Send push notification for a new message:', JSON.stringify(req.body));
+  
+  const im_admin = req.user.roles.admin
+  logger.debug("im_admin?", im_admin, "roles:", req.user.roles)
+  if (!im_admin) {
+    return res.status(403).send({success: false, msg: 'Unauthorized.'});
+  }
+
+  res.status(200).send({success: true})
+  // test im_admin!
+
+  // if (!req.params.user_id) {
+  //   res.status(405).send('user_id is mandatory!');
+  // }
+
+  // if (!req.params.app_id) {
+  //   res.status(405).send('app_id is mandatory!');
+  // }
+
+  // let app_id = req.params.app_id;
+  // let user_id = req.params.user_id;
+  // logger.log("user_id", user_id)
+  // logger.log("app_id", app_id)
+  // const jwt = decodejwt(req)
+  // if (jwt.sub !== user_id || jwt.app_id !== app_id) {
+  //   res.status(401).send("Unauthorized.")
+  //   return
+  // }
+
+  // if (!req.params.instance_id) {
+  //   res.status(405).send('instance_id is mandatory!');
+  // }
+
+  // let instance_id = req.params.instance_id;
+
+  // /*  instance_id : {
+  //       device_model:  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; r...",
+  //       language: "en-US",
+  //       platform: "ionic",
+  //       platform_version: "3.0.55"
+  //     }
+  // */
+
+  // let device_model = req.body.device_model;
+  // let language = req.body.language;
+  // let platform = req.body.platform;
+  // let platform_version = req.body.platform_version;
+  // let appid = req.params.app_id;
+  // const instance = {
+  //   app_id: app_id,
+  //   user_id: user_id,
+  //   instance_id: instance_id,
+  //   device_model:  device_model,
+  //   language: language,
+  //   platform: platform,
+  //   platform_version: platform_version
+  // }
+  // chatapi.saveAppInstance(
+  //   instance,
+  //   function(err) {
+  //     if (err) {
+  //       logger.error("instance saving error", err);
+  //       const reply = {
+  //         success: false,
+  //         err: err
+  //       }
+  //       res.status(404).send(reply)
+  //     }
+  //     else {
+  //       res.status(200).send({success: true})
+  //     }
+  //   }
+  // )
+});
+
 // ********************************************************************
 // **************** END PUSH NOTIFICATIONS MANAGEMENT *****************
 // ********************************************************************
