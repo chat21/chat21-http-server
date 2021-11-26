@@ -9,7 +9,7 @@
 // const winston = require("../winston");
 const logger = require('../tiledesk-logger').logger;
 var MessageConstants = require("../models/messageConstants");
-const getMessaging = require("firebase/messaging");
+const { initializeApp } = require('firebase-admin/app');
 
 var amqp = require('amqplib/callback_api');
 const { uuid } = require('uuidv4');
@@ -1007,6 +1007,8 @@ sendNotification(app_id, message, sender_id, recipient_id) {
     // const app_id = context.params.app_id;
     // const message = data.val();
 
+    let webClickAction = "http://localhost:4200/";
+
     console.log("sending notification");
     console.log("app_id:", app_id);
     console.log("message:", message);
@@ -1018,22 +1020,18 @@ sendNotification(app_id, message, sender_id, recipient_id) {
         forcenotification = message.attributes.forcenotification;
         console.log('forcenotification', forcenotification);
     }
-
     if (message.status != MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT) {
         console.log('message.status != MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT');
         return 0;
     }
-
     if (sender_id == "system") {
         console.log('do not send push notification if "system" is the sender');
         return 0;
     }
-
     if (sender_id == recipient_id) {
         console.log('do not send push notification to the sender itself');
         return 0;
     }
-
     if (forcenotification == false) {
         if (message.sender == "system"){
             console.log('do not send push notification for message with system as sender');
@@ -1053,15 +1051,8 @@ sendNotification(app_id, message, sender_id, recipient_id) {
     } else {
         console.log('forcenotification is enabled');
     }
-    
     const text = message.text;
     const messageTimestamp = JSON.stringify(message.timestamp);
-
-    // var path = `/apps/${app_id}/users/${sender_id}/instances`;
-
-    
-    // // return admin.database().ref(path).once('value').then(function(instancesIdAsFbObj) {
-    
     this.chatdb.allInstancesOf(app_id, sender_id, (err, instances) => {
         console.log('instances ', instances);
         /*
