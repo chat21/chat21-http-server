@@ -768,70 +768,44 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
   }
 
   res.status(200).send({success: true})
-  // test im_admin!
 
-  // if (!req.params.user_id) {
-  //   res.status(405).send('user_id is mandatory!');
-  // }
+  /*
+  {
+    "event_type": "message-sent",
+    "createdAt": 1637857283012,
+    "recipient_id": "03-ANDREALEO",
+    "app_id": "tilechat",
+    "message_id": "d9627444-d3ed-4bce-ba7c-4d16950f6343",
+    "data": {
+      "text": "test2",
+      "type": "text",
+      "recipient_fullname": "Andrea Leo",
+      "sender_fullname": "Andrea Sponziello",
+      "attributes": {
+        "client": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36",
+        "sourcePage": "http://localhost:8100/#/conversation-detail/03-ANDREALEO/Andrea%20Leo/active",
+        "userEmail": "andreasponziello@tiledesk.com",
+        "userFullname": "Andrea Sponziello",
+        "lang": "en"
+      },
+      "metadata": "",
+      "channel_type": "direct",
+      "message_id": "d9627444-d3ed-4bce-ba7c-4d16950f6343",
+      "sender": "6d011n62ir097c0143cc42dc",
+      "recipient": "03-ANDREALEO",
+      "app_id": "tilechat",
+      "timestamp": 1637857283009,
+      "status": 100
+    },
+    "extras": {
+      "topic": "apps.tilechat.users.6d011n62ir097c0143cc42dc.messages.03-ANDREALEO.clientadded"
+    }
+  }
+  */
 
-  // if (!req.params.app_id) {
-  //   res.status(405).send('app_id is mandatory!');
-  // }
+  // sendNotification(app_id, message, sender_id, recipient_id)
+  chatapi.sendNotification(req.body.app_id, req.body.data, req.body.data.sender, req.body.recipient_id);
 
-  // let app_id = req.params.app_id;
-  // let user_id = req.params.user_id;
-  // logger.log("user_id", user_id)
-  // logger.log("app_id", app_id)
-  // const jwt = decodejwt(req)
-  // if (jwt.sub !== user_id || jwt.app_id !== app_id) {
-  //   res.status(401).send("Unauthorized.")
-  //   return
-  // }
-
-  // if (!req.params.instance_id) {
-  //   res.status(405).send('instance_id is mandatory!');
-  // }
-
-  // let instance_id = req.params.instance_id;
-
-  // /*  instance_id : {
-  //       device_model:  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; r...",
-  //       language: "en-US",
-  //       platform: "ionic",
-  //       platform_version: "3.0.55"
-  //     }
-  // */
-
-  // let device_model = req.body.device_model;
-  // let language = req.body.language;
-  // let platform = req.body.platform;
-  // let platform_version = req.body.platform_version;
-  // let appid = req.params.app_id;
-  // const instance = {
-  //   app_id: app_id,
-  //   user_id: user_id,
-  //   instance_id: instance_id,
-  //   device_model:  device_model,
-  //   language: language,
-  //   platform: platform,
-  //   platform_version: platform_version
-  // }
-  // chatapi.saveAppInstance(
-  //   instance,
-  //   function(err) {
-  //     if (err) {
-  //       logger.error("instance saving error", err);
-  //       const reply = {
-  //         success: false,
-  //         err: err
-  //       }
-  //       res.status(404).send(reply)
-  //     }
-  //     else {
-  //       res.status(200).send({success: true})
-  //     }
-  //   }
-  // )
 });
 
 // ********************************************************************

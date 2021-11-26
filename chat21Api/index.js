@@ -8,6 +8,8 @@
  */
 // const winston = require("../winston");
 const logger = require('../tiledesk-logger').logger;
+var MessageConstants = require("../models/messageConstants");
+const getMessaging = require("firebase/messaging");
 
 var amqp = require('amqplib/callback_api');
 const { uuid } = require('uuidv4');
@@ -1005,209 +1007,139 @@ sendNotification(app_id, message, sender_id, recipient_id) {
     // const app_id = context.params.app_id;
     // const message = data.val();
 
-    // var forcenotification = false;
-    // if (message.attributes && message.attributes.forcenotification) {
-    //     forcenotification = message.attributes.forcenotification;
-    //     console.log('forcenotification', forcenotification);
-    // }
+    console.log("sending notification");
+    console.log("app_id:", app_id);
+    console.log("message:", message);
+    console.log("sender_id:", sender_id);
+    console.log("recipient_id:", recipient_id);
 
-    // if (message.status != chatApi.CHAT_MESSAGE_STATUS.DELIVERED){
-    //     return 0;
-    // }
+    let forcenotification = false;
+    if (message.attributes && message.attributes.forcenotification) {
+        forcenotification = message.attributes.forcenotification;
+        console.log('forcenotification', forcenotification);
+    }
 
-    // if (sender_id == "system"){
-    //     console.log('do not send push notification to system user');
-    //     return 0;
-    // }
+    if (message.status != MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT) {
+        console.log('message.status != MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT');
+        return 0;
+    }
 
-    // if (sender_id == recipient_id) {
-    //     console.log('do not send push notification for the sender itself');
-    //     return 0;
-    // }
+    if (sender_id == "system") {
+        console.log('do not send push notification if "system" is the sender');
+        return 0;
+    }
 
-    // if (forcenotification == false) {
+    if (sender_id == recipient_id) {
+        console.log('do not send push notification to the sender itself');
+        return 0;
+    }
 
-    //     if (message.sender == "system"){
-    //         console.log('do not send push notification for message with system as sender');
-    //         return 0;
-    //     }
+    if (forcenotification == false) {
+        if (message.sender == "system"){
+            console.log('do not send push notification for message with system as sender');
+            return 0;
+        }
     
-    //     if (message.attributes && message.attributes.sendnotification==false) {
-    //         console.log('do not send push notification because sendnotification is false');
-    //         return 0;
-    //     }
+        if (message.attributes && message.attributes.sendnotification == false) {
+            console.log('do not send push notification because sendnotification is false');
+            return 0;
+        }
     
-    //     if (recipient_id == "general_group" ) {
-    //         console.log('dont send push notification for mute recipient');
-    //         //if sender is receiver, don't send notification
-    //         return 0;
-    //     }
-
-    // } else {
-    //     console.log('forcenotification is enabled');
-    // }
+        if (recipient_id == "general_group" ) {
+            console.log('dont send push notification for mute recipient');
+            //if sender is receiver, don't send notification
+            return 0;
+        }
+    } else {
+        console.log('forcenotification is enabled');
+    }
     
-    // const text = message.text;
-    // const messageTimestamp = JSON.stringify(message.timestamp);
+    const text = message.text;
+    const messageTimestamp = JSON.stringify(message.timestamp);
 
     // var path = `/apps/${app_id}/users/${sender_id}/instances`;
 
-    // // return admin.database().ref(path).once('value').then(function(instancesIdAsFbObj) {
-    // this.chatdb.getAllUserInstances((err, instances) => {
-        
-    // })  
-    //     // console.log('instancesIdAsFbObj ' + instancesIdAsFbObj); 
-
-
-    //     // Check if there are any device tokens.
-    //     if (!instancesIdAsFbObj.hasChildren()) {
-    //         return console.log('There are no notification tokens to send to.');
-    //     }
-
-        
-    //     var instancesIdAsObj = instancesIdAsFbObj.val();
-
-    //     const tokens = Object.keys(instancesIdAsObj);
-    //     //console.log('tokens',tokens);
-
-
-
-        
-    //     for (var i = 0; i< tokens.length; i++ ){
-    //     // instancesIdAsObj.forEach(function(instanceIdAsFbObj) {
-    //         // console.log('instanceIdAsFbObj', instanceIdAsFbObj);
-
-            
-
-    //         const token = tokens[i];
-    //         // console.log('token', token);
-
-
-    //         var instanceIdAsObj = instancesIdAsObj[token];
-    //         //console.log('instanceIdAsObj', instanceIdAsObj);
-
-    //         const platform = instanceIdAsObj.platform;
-    //         //console.log('platform', platform);
-
-
-           
-    //         var clickAction = "NEW_MESSAGE";
-    //         var icon = "ic_notification_small";
-    //         if (platform=="ionic" || platform.indexOf("web/")>-1){
-    //             //clickAction="https://support.tiledesk.com/chat/?recipient="+message.sender;
-    //             //clickAction="https://support.tiledesk.com/chat/#"+message.sender;
-    //             //clickAction = "https://support.tiledesk.com/chat/";
-    //             clickAction = webClickAction;
-    //             icon = "/chat/assets/img/icon.png"
-    //         }
-    //         //console.log('clickAction', clickAction);
-
-
-    //           //https://firebase.google.com/docs/cloud-messaging/concept-options#notifications_and_data_messages
-    //     const payload = {
-    //         notification: {
-    //             title: message.sender_fullname,
-    //             body: text,
-    //             icon : icon,
-    //             sound : "default",
-    //             click_action: clickAction,
-    //             //click_action: "https://support.tiledesk.com/chat/",   // uncomment for intent filter in your custom project
-    //             //click_action: "NEW_MESSAGE",   // uncomment for intent filter in your custom project
-                
-    //             // "content-available": "1",
-    //             "content_available": "true",
-    //             badge : "1"
-    //         },
     
-    //         data: {
-    //             recipient: message.recipient,
-    //             recipient_fullname: message.recipient_fullname,                    
-    //             sender: message.sender,
-    //             sender_fullname: message.sender_fullname,     
-    //             channel_type: message.channel_type,
-    //             text: text,
-    //             //timestamp : JSON.stringify(admin.database.ServerValue.TIMESTAMP)
-    //             timestamp : new Date().getTime().toString()
-    //         }
-            
-    //         // ,webpush:{
-    //         //     notification: {
-    //         //         click_action: "https://support.tiledesk.com/chat/",
-    //         //     }
-    //         // }
-
-    //     };
+    // // return admin.database().ref(path).once('value').then(function(instancesIdAsFbObj) {
+    
+    this.chatdb.allInstancesOf(app_id, sender_id, (err, instances) => {
+        console.log('instances ', instances);
+        /*
+        [
+            {
+                _id: new ObjectId("61979dbacad78ce3fdea761c"),
+                instance_id: 'eIHQegUYdfGMWpgBBWQvPz:APA91bGZNT3kq31EhSpNr-_IZTUjNN3QyHgz40MjE_sNkl48eir5wkEihi4kIBWgCu7rZ3gXs62F3nCBCoVcSjvDbUKyn0-CGqRl2jWQAH7sQNUw0uTTdzOhOXOlZVNdKbCvM0VFRGkp',
+                app_id: 'tilechat',
+                device_model: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36',
+                language: 'it',
+                platform: 'ionic',
+                platform_version: '3.0.68',
+                user_id: '6d011n62ir097c0143cc42dc'
+            },
+            ...
+        ]
+        */
+        // Check if there are any device tokens.
+        if (!instances || (instances && instances.length == 0)) {
+            return console.log('There are no notification instances for', user_id);
+        }
+        for (let i = 0; i < instances.length; i++) {
+            const token = instances[i].instance_id;
+            console.log("FCM token:", token)
+            var instance = instances[i];
+            const platform = instance.platform;
+            var clickAction = "NEW_MESSAGE";
+            var icon = "ic_notification_small";
+            if (platform=="ionic" || platform.indexOf("web/") >- 1){
+                clickAction = webClickAction;
+                icon = "/chat/assets/img/icon.png"
+            }
+            const payload = {
+                notification: {
+                    title: message.sender_fullname,
+                    body: text,
+                    icon: icon,
+                    sound: "default",
+                    click_action: clickAction,
+                    "content_available": "true",
+                    badge: "1"
+                },
+                data: {
+                    recipient: message.recipient,
+                    recipient_fullname: message.recipient_fullname,
+                    sender: message.sender,
+                    sender_fullname: message.sender_fullname,
+                    channel_type: message.channel_type,
+                    text: text,
+                    timestamp: new Date().getTime().toString()
+                }
+            };
+            console.log("payload:", payload)
+            getMessaging().send(payload)
+            .then((response) => {
+                console.log("Push notification for message "+ JSON.stringify(message) + " with payload "+ JSON.stringify(payload) +" for token "+token+" and platform "+platform+" sent with response ",  JSON.stringify(response));
+                response.results.forEach((result, index) => {
+                    const error = result.error;
+                    if (error) {
+                        console.error('Failure sending notification to', token, error);
+                        if (error.code === 'messaging/invalid-registration-token' || error.code === 'messaging/registration-token-not-registered') {
+                            var tokenToRemove = path+'/'+token;
+                            console.error('Invalid regid. Removing it', token, ' from ',tokenToRemove,error);
+                            // TODO
+                            // admin.database().ref(tokenToRemove).remove().then(function () {
+                            //     console.log('tokenToRemove removed',tokenToRemove);
+                            // });
+                        }
+                    }
+                    return error;
+                })
+            })
+            .catch((error) => {
+                console.log('Error sending message:', error);
+            });
+        }
         
-    //     // DEBUG console.log('payload ', payload);
-
-    //      admin.messaging().sendToDevice(token, payload)
-    //     // return admin.messaging().sendToDevice(tokens, payload)
-        
-    //          .then(function (response) {
-    //         console.log("Push notification for message "+ JSON.stringify(message) + " with payload "+ JSON.stringify(payload) +" for token "+token+" and platform "+platform+" sent with response ",  JSON.stringify(response));
-                        
-    //         //console.log("Message.results[0]:", JSON.stringify(response.results[0]));
-
-
-    //                     // For each message check if there was an error.
-    //         // const tokensToRemove = [];
-
-    //         response.results.forEach((result, index) => {
-    //             const error = result.error;
-    //             if (error) {
-
-    //             //console.error('Failure sending notification to', tokens[index], error);
-    //             console.error('Failure sending notification to', token, error);
-
-    //             // Cleanup the tokens who are not registered anymore.
-    //                 if (error.code === 'messaging/invalid-registration-token' ||
-    //                     error.code === 'messaging/registration-token-not-registered') {
-
-    //                     var tokenToRemove = path+'/'+token;
-    //                     // console.log('tokenToRemove',tokenToRemove);
-
-    //                     console.error('Invalid regid. Removing it', token, ' from ',tokenToRemove,error);
-
-                      
-
-    //                    admin.database().ref(tokenToRemove).remove().then(function () {
-    //                     console.log('tokenToRemove removed',tokenToRemove);
-    //                    });
-
-    //                         //ERRORE BUG
-    //                     // tokensToRemove.push(tokensSnapshot.ref.child(tokens[index]).remove());
-
-                        
-    //                 }
-
-    //                 return error;
-
-
-    //             }
-    //         });
-
-    //         // return Promise.all(tokensToRemove);
-
-    //     })
-    //     .catch(function (error) {
-    //         console.error("Error sending message:", error);
-    //         return 0;
-    //     });
-
-
-
-
-
-
-    //     }//end for
-
-      
-        
-      
-
-    // });
-
-    // //return 0;
+    });
 
 }
 

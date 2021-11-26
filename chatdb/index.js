@@ -192,6 +192,21 @@ class ChatDB {
     });
   }
 
+  allInstancesOf(appid, userid, callback) {
+    winston.debug("DB. app:", appid, "user:", userid)
+    this.db.collection(this.instances_collection).find( { user_id: userid, app_id: appid }).toArray( (err, docs) => {
+      if (err) {
+        if (callback) {
+          callback(err, null)
+        }
+      }
+      else {
+        if (callback) {
+          callback(null, docs)
+        }
+      }
+    });
+  }
 }
 
 module.exports = { ChatDB };
