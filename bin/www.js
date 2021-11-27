@@ -14,12 +14,13 @@ console.log("Starting server on port", port)
 
 async function start() {
       if (process.env.KEY_PEM && process.env.CERT_PEM) {
-            var privateKey  = fs.readFileSync('sslcert/server.key', 'utf8');
-            var certificate = fs.readFileSync('sslcert/server.crt', 'utf8');
+            console.log('Server certificate and key found. Starting HTTPS server.');
+            var privateKey  = fs.readFileSync(process.env.KEY_PEM, 'utf8');
+            var certificate = fs.readFileSync(process.env.CERT_PEM, 'utf8');
             var credentials = {key: privateKey, cert: certificate};
             var httpsServer = https.createServer(credentials, chat21HttpServer.app);
             httpsServer.listen(port, () => {
-                  console.log('HTTP server started.')
+                  console.log('HTTPS server started.')
                   console.log('Starting AMQP publisher...');
                   //chat21HttpServer.startAMQP();
                   chat21HttpServer.startAMQP({rabbitmq_uri: process.env.RABBITMQ_URI});
