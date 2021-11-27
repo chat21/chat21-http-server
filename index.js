@@ -8,12 +8,14 @@ var cors = require('cors');
 var mongodb = require("mongodb");
 const { ChatDB } = require('./chatdb/index.js');
 const { Chat21Api } = require('./chat21Api/index.js');
+const { Chat21Push } = require('./sendpush/index.js');
 let logger = require('./tiledesk-logger').logger;
 
-const jwtKey = process.env.JWT_KEY || "tokenKey"
-const BASEURL = '/api'
-let chatdb = null
-let chatapi = null
+const jwtKey = process.env.JWT_KEY || "tokenKey";
+const BASEURL = '/api';
+let chatdb = null;
+let chatapi = null;
+let chatpush = null;
 
 const app = express()
 app.use(bodyParser.json())
@@ -735,7 +737,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
     platform: platform,
     platform_version: platform_version
   }
-  chatapi.saveAppInstance(
+  chatpush.saveAppInstance(
     instance,
     function(err) {
       if (err) {
@@ -804,7 +806,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
   */
 
   // sendNotification(app_id, message, sender_id, recipient_id)
-  chatapi.sendNotification(req.body.app_id, req.body.data, req.body.data.sender, req.body.recipient_id);
+  chatpush.sendNotification(req.body.app_id, req.body.data, req.body.data.sender, req.body.recipient_id);
 
 });
 
@@ -877,6 +879,7 @@ async function startAMQP(config) {
   chatdb = new ChatDB({database: db})
   
   chatapi = new Chat21Api({exchange: 'amq.topic', database: chatdb, rabbitmq_uri: rabbitmq_uri});
+  chatpush = new Chat21Push({database: chatdb});
   var amqpConnection = await chatapi.start();
   logger.log("[AMQP] connected.");
 }
