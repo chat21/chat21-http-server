@@ -2,15 +2,17 @@ const admin = require("firebase-admin");
 const logger = require('../tiledesk-logger').logger;
 const MessageConstants = require("../models/messageConstants");
 
-var serviceAccount = {
-    "project_id": process.env.FIREBASE_PROJECT_ID,
-    "private_key": process.env.FIREBASE_PRIVATE_KEY,
-    "client_email": process.env.FIREBASE_CLIENT_EMAIL
-}
+if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+    const serviceAccount = {
+        "project_id": process.env.FIREBASE_PROJECT_ID,
+        "private_key": process.env.FIREBASE_PRIVATE_KEY,
+        "client_email": process.env.FIREBASE_CLIENT_EMAIL
+    }
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+    });
+}
 
 /* 
     ver 0.1

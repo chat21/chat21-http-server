@@ -1,4 +1,7 @@
 
+## v0.2.2
+- Firebase settings are now optional
+
 ## v0.2.1
 - added firebase push notifications management
 - added class Chat21Push
