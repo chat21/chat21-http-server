@@ -756,8 +756,8 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
 });
 
 /**
- * Send push notification for a new message.
- * Admin users only
+ * Sends a push notification for a new message.
+ * Admin role only
  * This endpoint supports CORS.
  */
  app.post(BASEURL + '/:app_id/notify', (req, res) => {

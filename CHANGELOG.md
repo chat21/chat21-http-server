@@ -1,6 +1,10 @@
 
-## v0.1.16
-- added push notifications management
+## v0.2.1
+- added firebase push notifications management
+- added class Chat21Push
+- added /:app_id/:user_id/instances/:instance_id endpoint
+- added /:app_id/notify endpoint
+- added npm firebase-admin: ^10.0.0
 
 ## v0.1.15
 - fixed: now setGroupMembers works the right way, sending group-update notifications to original group members

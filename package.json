@@ -1,6 +1,6 @@
 {
   "name": "@chat21/chat21-http-server",
-  "version": "0.1.39",
+  "version": "0.2.1",
   "description": "Chat21 HTTP APIs",
   "main": "index.js",
   "dependencies": {
@@ -10,7 +10,6 @@
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
-    "firebase": "^9.5.0",
     "firebase-admin": "^10.0.0",
     "jsonwebtoken": "^8.5.1",
     "mongodb": "^4.0.1",
