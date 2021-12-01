@@ -19,7 +19,7 @@
     "winston": "^3.3.3"
   },
   "devDependencies": {
-    "@chat21/chat21-server": "0.1.14",
+    "@chat21/chat21-server": "0.2.1",
     "chai": "^4.3.4",
     "chai-http": "^4.3.0",
     "mocha": "^9.0.2"

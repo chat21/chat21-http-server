@@ -20,7 +20,7 @@ let observer = require('@chat21/chat21-server').observer;
 // console.log("observer0",observer);
 // observer.setWebHook("http://localhost:3001")
 
-observer.setWebHookEndpoint("http://localhost:3001/");
+observer.setWebHookEndpoints(["http://localhost:3001/"]);
 observer.logger.setLog("ERROR");
 let should = chai.should();
 
@@ -58,40 +58,27 @@ describe('MessageRoute', () => {
   describe('/sendDirect', () => {
     // mocha test/messageRoute.js  --grep 'sendDirectSent'      
     it('sendDirectSent', (done) => {
-      // observer.setWebHookEndpoint("http://localhost:3001/");
-      // console.log("")
-
       observer.setWebHookEvents("message-sent");             //NON SERVE CREDO 
       observer.getWebhooks().setWebHookEvents("message-sent");
       console.log("observer.getWebhooks().getWebHookEvents", observer.getWebhooks().getWebHookEvents());
-
-      // observer.setWebHookEndpoint("http://localhost:3001/");
-      observer.getWebhooks().setWebHookEndpoint("http://localhost:3001/");
-      console.log("observer.getWebhooks().getWebHookEndpoint", observer.getWebhooks().getWebHookEndpoint());
-      // observer.setWebHookEvents("message-sent");
-
+      observer.getWebhooks().setWebHookEndpoints(["http://localhost:3001/"]);
+      console.log("observer.getWebhooks().getWebHookEndpoint", observer.getWebhooks().getWebHookEndpoints());
       var serverClient = express();
       serverClient.use(bodyParser.json());
       serverClient.post('/', function (req, res) {
         console.log("res.body webhook", req.body);
         if (req.body.event_type == "message-sent") {
-
           console.log('serverClient req', JSON.stringify(req.body));
           console.log("serverClient.headers", JSON.stringify(req.headers));
           // console.log("111",req.body.data.text);
           expect(req.body.data.text).to.equal("text-sendDirectSent");
-
           expect(req.body.data.recipient).to.equal(user2.id);
           expect(req.body.data.recipient_fullname).to.equal(user2.fullname);
-
           expect(req.body.data.status).to.equal(100);
-
           expect(req.body.data.sender).to.equal(user1.id);
           expect(req.body.data.sender_fullname).to.equal(user1.fullname);
-
           expect(req.body.data.channel_type).to.equal("direct");
-          // expect(req.body.data.timelineOf).to.equal("5f09983d20f76b0019af7190");           
-
+          // expect(req.body.data.timelineOf).to.equal("5f09983d20f76b0019af7190");
           res.send({ text: "ok from webhook" });
           listener.close(function () { console.log('listener closed :('); });
           done();
@@ -117,14 +104,12 @@ describe('MessageRoute', () => {
     // mocha test/messageRoute.js  --grep 'sendDirectSent'
 
     it('sendDirectDelivered', (done) => {
-      // observer.setWebHookEndpoint("http://localhost:3001/");
       // console.log("")
       observer.setWebHookEvents("message-delivered");             //NON SERVE CREDO 
       observer.getWebhooks().setWebHookEvents("message-delivered");
       console.log("observer.getWebhooks().getWebHookEvents", observer.getWebhooks().getWebHookEvents());
-      // observer.setWebHookEndpoint("http://localhost:3001/");
-      observer.getWebhooks().setWebHookEndpoint("http://localhost:3001/");
-      console.log("observer.getWebhooks().getWebHookEndpoint", observer.getWebhooks().getWebHookEndpoint());
+      observer.getWebhooks().setWebHookEndpoints(["http://localhost:3001/"]);
+      console.log("observer.getWebhooks().getWebHookEndpoint", observer.getWebhooks().getWebHookEndpoints());
       // observer.setWebHookEvents("message-sent");         
       var serverClient = express();
       serverClient.use(bodyParser.json());
@@ -176,8 +161,8 @@ describe('MessageRoute', () => {
       console.log("observer.getWebhooks().getWebHookEvents", observer.getWebhooks().getWebHookEvents());
 
       // observer.setWebHookEndpoint("http://localhost:3001/");
-      observer.getWebhooks().setWebHookEndpoint("http://localhost:3001/");
-      console.log("observer.getWebhooks().getWebHookEndpoint", observer.getWebhooks().getWebHookEndpoint());
+      observer.getWebhooks().setWebHookEndpoints(["http://localhost:3001/"]);
+      console.log("observer.getWebhooks().getWebHookEndpoint", observer.getWebhooks().getWebHookEndpoints());
       // observer.setWebHookEvents("message-sent");
 
       var count = 0;
