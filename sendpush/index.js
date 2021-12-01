@@ -122,7 +122,8 @@ class Chat21Push {
             */
             // Check if there are any device tokens.
             if (!instances || (instances && instances.length == 0)) {
-                return logger.log('There are no notification instances for', user_id);
+                logger.log('There are no notification instances for:', recipient_id);
+                return
             }
             for (let i = 0; i < instances.length; i++) {
                 const token = instances[i].instance_id;
