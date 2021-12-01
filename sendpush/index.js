@@ -103,7 +103,7 @@ class Chat21Push {
         }
         const text = message.text;
         const messageTimestamp = JSON.stringify(message.timestamp);
-        this.chatdb.allInstancesOf(app_id, sender_id, (err, instances) => {
+        this.chatdb.allInstancesOf(app_id, recipient_id, (err, instances) => {
             logger.log('instances ', instances);
             /*
             [
