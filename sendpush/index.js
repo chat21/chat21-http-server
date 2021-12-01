@@ -58,7 +58,6 @@ class Chat21Push {
     }
 
     sendNotification(app_id, message, sender_id, recipient_id) {
-        logger.log("process.env", process.env);
         logger.log("sending notification");
         logger.log("app_id:", app_id);
         logger.log("message:", message);
