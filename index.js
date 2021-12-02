@@ -37,7 +37,7 @@ app.use(function (req, res, next) {
 app.use(function (req, res, next) {
   console.log("app.use(), req.query:", req.query);
   var urlobj = url.parse(req.originalUrl);
-  if (urlobj.pathname === '/') {
+  if (urlobj.pathname === '/' || urlobj.pathname.includes("/push/webhook/endpoint/") ) {
     next();
     return;
   }
@@ -838,14 +838,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
     res.status(405).send('webhook token error!');
     return;
   }
-  
-  const im_admin = req.user.roles.admin
-  logger.debug("im_admin?", im_admin, "roles:", req.user.roles);
-  if (!im_admin) {
-    return res.status(403).send({success: false, msg: 'Unauthorized.'});
-  }
 
-  console.log('/postdata', JSON.stringify(req.body));
   const httpsAgent = new https.Agent({
       rejectUnauthorized: false // (NOTE: this will disable client verification)
   });
