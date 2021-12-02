@@ -10,6 +10,8 @@ const { ChatDB } = require('./chatdb/index.js');
 const { Chat21Api } = require('./chat21Api/index.js');
 const { Chat21Push } = require('./sendpush/index.js');
 let logger = require('./tiledesk-logger').logger;
+const axios = require('axios'); // ONLY FOR TEMP PUSH WEBHOOK ENDPOINT
+const https = require('https'); // ONLY FOR TEMP PUSH WEBHOOK ENDPOINT
 
 const jwtKey = process.env.JWT_KEY || "tokenKey";
 const BASEURL = '/api';
@@ -763,6 +765,11 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
  app.post(BASEURL + '/:app_id/notify', (req, res) => {
   logger.debug('HTTP: Send push notification for a new message:', JSON.stringify(req.body));
   
+  if (!req.params.app_id) {
+    res.status(405).send('app_id is mandatory!');
+    return;
+  }
+
   const im_admin = req.user.roles.admin
   logger.debug("im_admin?", im_admin, "roles:", req.user.roles)
   if (!im_admin) {
@@ -805,8 +812,62 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
   }
   */
 
-  // sendNotification(app_id, message, sender_id, recipient_id)
   chatpush.sendNotification(req.body.app_id, req.body.data, req.body.data.sender, req.body.recipient_id);
+
+});
+
+/**
+ * TEMPORARY PUSH WEBHOOK ENDPOINT. TO BE REMOVED.
+ */
+ app.post(BASEURL + '/:app_id/push/webhook/endpoint/:token', (req, res) => {
+  logger.debug('/push/webhook/endpoint postdata:', JSON.stringify(req.body));
+  
+  res.status(200).send({success: true});
+
+  if (!req.params.app_id) {
+    res.status(405).send('app_id is mandatory!');
+    return;
+  }
+
+  if (!req.params.token) {
+    res.status(405).send('webhook token is mandatory!');
+    return;
+  }
+
+  if (!req.params.token === process.env.PUSH_WH_WEBHOOK_TOKEN) {
+    res.status(405).send('webhook token error!');
+    return;
+  }
+  
+  const im_admin = req.user.roles.admin
+  logger.debug("im_admin?", im_admin, "roles:", req.user.roles);
+  if (!im_admin) {
+    return res.status(403).send({success: false, msg: 'Unauthorized.'});
+  }
+
+  console.log('/postdata', JSON.stringify(req.body));
+  const httpsAgent = new https.Agent({
+      rejectUnauthorized: false // (NOTE: this will disable client verification)
+  });
+
+  let axios_req = {
+      url: process.env.PUSH_WH_NOTIFY_URL,
+      method: 'POST',
+      data: req.body,
+      headers: {
+          'Authorization': process.env.PUSH_WH_CHAT21_API_ADMIN_TOKEN
+      },
+      httpsAgent: httpsAgent
+  }
+  logger.log("axios_req:", axios_req);
+
+  axios(axios_req)
+    .then(function (response) {
+      logger.log("response.status:", response.status);
+    })
+    .catch(function (error) {
+      logger.error("Axios call error:", error);
+    });
 
 });
 
