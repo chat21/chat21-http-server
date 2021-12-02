@@ -1,4 +1,7 @@
 
+## v0.2.3
+- Added push notifications webhook endpoint
+
 ## v0.2.2
 - Firebase settings are now optional
 
