@@ -1,31 +1,37 @@
-const admin = require("firebase-admin");
-const logger = require('../tiledesk-logger').logger;
-const MessageConstants = require("../models/messageConstants");
-
-if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
-    const serviceAccount = {
-        "project_id": process.env.FIREBASE_PROJECT_ID,
-        "private_key": process.env.FIREBASE_PRIVATE_KEY,
-        "client_email": process.env.FIREBASE_CLIENT_EMAIL
-    }
-
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-    });
-}
-
-/* 
-    ver 0.1
+/*
     Andrea Sponziello - (c) Tiledesk.com
 */
 
 /**
- * Chat21Api for NodeJS
+ * Chat21Push class
  */
-// const winston = require("../winston");
-// var amqp = require('amqplib/callback_api');
-// const { uuid } = require('uuidv4');
-// const { JsonWebTokenError } = require('jsonwebtoken');
+
+const admin = require("firebase-admin");
+const logger = require('../tiledesk-logger').logger;
+const MessageConstants = require("../models/messageConstants");
+
+if (process.env.PUSH_ENABLED == undefined || (process.env.PUSH_ENABLED && process.env.PUSH_ENABLED !== 'true')) {
+    logger.log("PUSH NOTIFICATIONS: OFF");
+}
+else {
+    logger.log("PUSH NOTIFICATIONS: ON");
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+        const serviceAccount = {
+            "project_id": process.env.FIREBASE_PROJECT_ID,
+            "private_key": process.env.FIREBASE_PRIVATE_KEY,
+            "client_email": process.env.FIREBASE_CLIENT_EMAIL
+        }
+    
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+        logger.log("after admin.apps.length:", admin.apps.length);
+        // logger.log("admin.credential:", admin.app());
+    }
+    else {
+        logger.log("PUSH NOTIFICATION CONFIG ERROR. Please set all these .env props: FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL");
+    }
+}
 
 class Chat21Push {
     
@@ -64,6 +70,16 @@ class Chat21Push {
         logger.log("sender_id:", sender_id);
         logger.log("recipient_id:", recipient_id);
 
+        logger.log("admin.credential:" + admin.credential)
+        if (process.env.PUSH_ENABLED == undefined || (process.env.PUSH_ENABLED && process.env.PUSH_ENABLED === 'false')) {
+            logger.log("PUSH NOTIFICATIONS DISABLED");
+            return
+        }
+        else if (admin.apps.length == 0) {
+            logger.log("PUSH NOTIFICATIONS ON, but Firebase admin app not configured!");
+            return;
+        }
+
         let forcenotification = false;
         if (message.attributes && message.attributes.forcenotification) {
             forcenotification = message.attributes.forcenotification;
@@ -101,7 +117,7 @@ class Chat21Push {
             logger.log('forcenotification is enabled');
         }
         const text = message.text;
-        const messageTimestamp = JSON.stringify(message.timestamp);
+        // const messageTimestamp = JSON.stringify(message.timestamp);
         this.chatdb.allInstancesOf(app_id, recipient_id, (err, instances) => {
             logger.log('instances ', instances);
             /*
@@ -125,8 +141,8 @@ class Chat21Push {
                 return
             }
             for (let i = 0; i < instances.length; i++) {
-                const token = instances[i].instance_id;
-                logger.log("FCM token:", token)
+                const instance_id = instances[i].instance_id;
+                logger.log("FCM instance_id:", instance_id)
                 var instance = instances[i];
                 const platform = instance.platform;
                 var clickAction = "NEW_MESSAGE";
@@ -161,7 +177,7 @@ class Chat21Push {
                         text: text,
                         timestamp: new Date().getTime().toString()
                     },
-                    token: token
+                    token: instance_id
                 };
                 if (platform=="ionic" || platform.indexOf("web/") >- 1) {
                     payload.webpush = {
@@ -194,13 +210,13 @@ class Chat21Push {
                     }
                 }
                 logger.log("payload:", payload)
-                // admin.messaging().sendToDevice(token, payload) // LEGACY
+                // admin.messaging().sendToDevice(instance_id, payload) // LEGACY
                 // info here: https://firebase.google.com/docs/cloud-messaging/send-message
                 admin.messaging().send(payload)
                 .then((response) => {
                     logger.log("Push notification sent for message:", JSON.stringify(message));
                     logger.log("  Push payload:", JSON.stringify(payload));
-                    logger.log("  Token:", token);
+                    logger.log("  Token (aka instance_id):", instance_id);
                     logger.log("  Platform:", platform);
                     logger.log("  Response:", JSON.stringify(response));
                     // response.results.forEach((result, index) => {
@@ -225,8 +241,14 @@ class Chat21Push {
                         (error.errorInfo.code === 'messaging/invalid-registration-token' ||
                         error.errorInfo.code === 'messaging/invalid-argument' ||
                         error.errorInfo.code === 'messaging/registration-token-not-registered') ) {
-                            // this.chatdb.removeToken(token, (err) => {
-                            // }
+                        this.chatdb.deleteInstanceByInstanceId(instance_id, (err) => {
+                            if (err) {
+                                logger.error('Error while removing instance_id:', instance_id);    
+                            }
+                            else {
+                                logger.log('Remove instance_id:', instance_id);
+                            }
+                        });
                     }
                 });
             }

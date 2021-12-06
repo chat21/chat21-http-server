@@ -1,6 +1,10 @@
 
+## v0.2.4
+- added support for instance_id removal on push notification sending error
+- added PUSH_ENABLED=true|false in .env
+
 ## v0.2.3
-- Added push notifications webhook endpoint
+- Embedded (temporarily) the push notifications webhook endpoint in chatApis
 
 ## v0.2.2
 - Firebase settings are now optional

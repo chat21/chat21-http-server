@@ -1,3 +1,7 @@
+/*
+    Andrea Sponziello - (c) Tiledesk.com
+*/
+
 require('dotenv').config();
 var url = require('url');
 const express = require("express");
@@ -35,7 +39,6 @@ app.use(function (req, res, next) {
 });
 
 app.use(function (req, res, next) {
-  console.log("app.use(), req.query:", req.query);
   var urlobj = url.parse(req.originalUrl);
   if (urlobj.pathname === '/' || urlobj.pathname.includes("/push/webhook/endpoint/") ) {
     next();
@@ -852,7 +855,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
       },
       httpsAgent: httpsAgent
   }
-  logger.log("axios_req:", axios_req);
+  // logger.log("axios_req:", axios_req);
 
   axios(axios_req)
     .then(function (response) {

@@ -1,7 +1,6 @@
 const winston = require("../winston");
 
 /* 
-    ver 0.1.2
     Andrea Sponziello - (c) Tiledesk.com
 */
 
@@ -207,6 +206,22 @@ class ChatDB {
       }
     });
   }
+
+  deleteInstanceByInstanceId(instance_id, callback) {
+    this.db.collection(this.instances_collection).deleteOne({instance_id: instance_id}, function(err, obj) {
+      if (err) {
+        if (callback) {
+          callback(err, null);
+        }
+      }
+      else {
+        if (callback) {
+          callback(null, obj);
+        }
+      }
+   });
+  }
+
 }
 
 module.exports = { ChatDB };
