@@ -852,7 +852,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
   let axios_req = {
       url: process.env.PUSH_WH_NOTIFY_URL,
       method: 'POST',
-      data: req.body.data,
+      data: req.body,
       headers: {
           'Authorization': process.env.PUSH_WH_CHAT21_API_ADMIN_TOKEN
       },
