@@ -85,10 +85,10 @@ class Chat21Push {
             forcenotification = message.attributes.forcenotification;
             logger.log('forcenotification', forcenotification);
         }
-        if (message.status != MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT) {
-            logger.log('message.status != MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT');
-            return 0;
-        }
+        // if (message.status != MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT) {
+        //     logger.log('message.status != MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT');
+        //     return 0;
+        // }
         if (sender_id == "system") {
             logger.log('do not send push notification if "system" is the sender');
             return 0;
