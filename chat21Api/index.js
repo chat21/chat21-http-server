@@ -728,7 +728,7 @@ class Chat21Api {
             outgoing_message.timestamp = timestamp
         }
         logger.debug("outgoing_message: " + JSON.stringify(outgoing_message))
-        let dest_topic = `apps.${appid}.users.${sender}.messages.${recipient}.outgoing`
+        let dest_topic = `apps.${appid}.outgoing.users.${sender}.messages.${recipient}.outgoing`
         const message_payload = JSON.stringify(outgoing_message)
         this.publish(dest_topic, Buffer.from(message_payload), function (err) {
             logger.debug("PUBLISHED: SENDING MESSAGE TO TOPIC: " + dest_topic)
@@ -781,7 +781,7 @@ class Chat21Api {
         //     outgoing_message.timestamp = timestamp
         //   }
         logger.debug("outgoing_message (sendMessageRaw): " + JSON.stringify(outgoing_message))
-        let dest_topic = `apps.${appid}.users.${outgoing_message.sender}.messages.${outgoing_message.recipient}.outgoing`
+        let dest_topic = `apps.${appid}.outgoing.users.${outgoing_message.sender}.messages.${outgoing_message.recipient}.outgoing`
         logger.debug("dest_topic (sendMessageRaw): " + dest_topic)
         const message_payload = JSON.stringify(outgoing_message)
         this.publish(dest_topic, Buffer.from(message_payload), (err) => {
@@ -981,164 +981,8 @@ class Chat21Api {
     }
 
 // ****************************************************************
-// **************** PUSH NOTIFICATIONS MANAGEMENT *****************
+// **************** AMQP COMMUNICATION MANAGEMENT *****************
 // ****************************************************************
-
-// saveAppInstance(
-//     instance,
-//     callback) {
-//     this.chatdb.saveAppInstance(instance, (err) => {
-//         if (err) {
-//             logger.error("Error while saving instance:", err);
-//             callback(err);
-//         }
-//         else {
-//             callback(null);
-//         }
-//     });
-// }
-
-// sendNotification(app_id, message, sender_id, recipient_id) {
-//     // = db.ref('/apps/{app_id}/users/{sender_id}/messages/{recipient_id}/{message_id}').onCreate((data, context) => {
-//     // const message_id = context.params.message_id;
-//     // const sender_id = context.params.sender_id; 
-//     // const recipient_id = context.params.recipient_id;
-//     // const app_id = context.params.app_id;
-//     // const message = data.val();
-
-//     let webClickAction = "http://localhost:4200/";
-
-//     console.log("sending notification");
-//     console.log("app_id:", app_id);
-//     console.log("message:", message);
-//     console.log("sender_id:", sender_id);
-//     console.log("recipient_id:", recipient_id);
-
-//     let forcenotification = false;
-//     if (message.attributes && message.attributes.forcenotification) {
-//         forcenotification = message.attributes.forcenotification;
-//         console.log('forcenotification', forcenotification);
-//     }
-//     if (message.status != MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT) {
-//         console.log('message.status != MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT');
-//         return 0;
-//     }
-//     if (sender_id == "system") {
-//         console.log('do not send push notification if "system" is the sender');
-//         return 0;
-//     }
-//     if (sender_id == recipient_id) {
-//         console.log('do not send push notification to the sender itself');
-//         return 0;
-//     }
-//     if (forcenotification == false) {
-//         if (message.sender == "system"){
-//             console.log('do not send push notification for message with system as sender');
-//             return 0;
-//         }
-    
-//         if (message.attributes && message.attributes.sendnotification == false) {
-//             console.log('do not send push notification because sendnotification is false');
-//             return 0;
-//         }
-    
-//         if (recipient_id == "general_group" ) {
-//             console.log('dont send push notification for mute recipient');
-//             //if sender is receiver, don't send notification
-//             return 0;
-//         }
-//     } else {
-//         console.log('forcenotification is enabled');
-//     }
-//     const text = message.text;
-//     const messageTimestamp = JSON.stringify(message.timestamp);
-//     this.chatdb.allInstancesOf(app_id, sender_id, (err, instances) => {
-//         console.log('instances ', instances);
-//         /*
-//         [
-//             {
-//                 _id: new ObjectId("61979dbacad78ce3fdea761c"),
-//                 instance_id: 'eIHQegUYdfGMWpgBBWQvPz:APA91bGZNT3kq31EhSpNr-_IZTUjNN3QyHgz40MjE_sNkl48eir5wkEihi4kIBWgCu7rZ3gXs62F3nCBCoVcSjvDbUKyn0-CGqRl2jWQAH7sQNUw0uTTdzOhOXOlZVNdKbCvM0VFRGkp',
-//                 app_id: 'tilechat',
-//                 device_model: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36',
-//                 language: 'it',
-//                 platform: 'ionic',
-//                 platform_version: '3.0.68',
-//                 user_id: '6d011n62ir097c0143cc42dc'
-//             },
-//             ...
-//         ]
-//         */
-//         // Check if there are any device tokens.
-//         if (!instances || (instances && instances.length == 0)) {
-//             return console.log('There are no notification instances for', user_id);
-//         }
-//         for (let i = 0; i < instances.length; i++) {
-//             const token = instances[i].instance_id;
-//             console.log("FCM token:", token)
-//             var instance = instances[i];
-//             const platform = instance.platform;
-//             var clickAction = "NEW_MESSAGE";
-//             var icon = "ic_notification_small";
-//             if (platform=="ionic" || platform.indexOf("web/") >- 1){
-//                 clickAction = webClickAction;
-//                 icon = "/chat/assets/img/icon.png"
-//             }
-//             const payload = {
-//                 notification: {
-//                     title: message.sender_fullname,
-//                     body: text,
-//                     icon: icon,
-//                     sound: "default",
-//                     click_action: clickAction,
-//                     "content_available": "true",
-//                     badge: "1"
-//                 },
-//                 data: {
-//                     recipient: message.recipient,
-//                     recipient_fullname: message.recipient_fullname,
-//                     sender: message.sender,
-//                     sender_fullname: message.sender_fullname,
-//                     channel_type: message.channel_type,
-//                     text: text,
-//                     timestamp: new Date().getTime().toString()
-//                 }
-//             };
-//             console.log("payload:", payload)
-//             getMessaging().send(payload)
-//             .then((response) => {
-//                 console.log("Push notification for message "+ JSON.stringify(message) + " with payload "+ JSON.stringify(payload) +" for token "+token+" and platform "+platform+" sent with response ",  JSON.stringify(response));
-//                 response.results.forEach((result, index) => {
-//                     const error = result.error;
-//                     if (error) {
-//                         console.error('Failure sending notification to', token, error);
-//                         if (error.code === 'messaging/invalid-registration-token' || error.code === 'messaging/registration-token-not-registered') {
-//                             var tokenToRemove = path+'/'+token;
-//                             console.error('Invalid regid. Removing it', token, ' from ',tokenToRemove,error);
-//                             // TODO
-//                             // admin.database().ref(tokenToRemove).remove().then(function () {
-//                             //     console.log('tokenToRemove removed',tokenToRemove);
-//                             // });
-//                         }
-//                     }
-//                     return error;
-//                 })
-//             })
-//             .catch((error) => {
-//                 console.log('Error sending message:', error);
-//             });
-//         }
-        
-//     });
-
-// }
-
-// ********************************************************************
-// **************** END PUSH NOTIFICATIONS MANAGEMENT *****************
-// ********************************************************************
-
-
-    // AMQP COMMUNICATION
 
     start() {
         const that = this;

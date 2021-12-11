@@ -18,7 +18,7 @@ const axios = require('axios'); // ONLY FOR TEMP PUSH WEBHOOK ENDPOINT
 const https = require('https'); // ONLY FOR TEMP PUSH WEBHOOK ENDPOINT
 
 const jwtKey = process.env.JWT_KEY || "tokenKey";
-const BASEURL = '/api';
+const BASEURL = process.env.BASEURL || '/api';
 let chatdb = null;
 let chatapi = null;
 let chatpush = null;
@@ -763,7 +763,6 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
 /**
  * Sends a push notification for a new message.
  * Admin role only
- * This endpoint supports CORS.
  */
  app.post(BASEURL + '/:app_id/notify', (req, res) => {
   logger.debug('HTTP: Send push notification for a new message:', JSON.stringify(req.body));
@@ -774,7 +773,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
   }
 
   const im_admin = req.user.roles.admin
-  logger.debug("im_admin?", im_admin, "roles:", req.user.roles)
+  // logger.debug("im_admin?", im_admin, "roles:", req.user.roles)
   if (!im_admin) {
     return res.status(403).send({success: false, msg: 'Unauthorized.'});
   }
@@ -815,7 +814,8 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
   }
   */
 
-  chatpush.sendNotification(req.body.app_id, req.body.data, req.body.data.sender, req.body.recipient_id);
+
+  chatpush.sendNotification(req.body.data.app_id, req.body.data, req.body.data.sender, req.body.deliver_to);
 
 });
 
@@ -823,15 +823,18 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
  * TEMPORARY PUSH WEBHOOK ENDPOINT. TO BE REMOVED.
  */
  app.post(BASEURL + '/:app_id/push/webhook/endpoint/:token', (req, res) => {
-  logger.debug('/push/webhook/endpoint postdata:', JSON.stringify(req.body));
-  
   res.status(200).send({success: true});
 
+  logger.debug('/push/webhook/endpoint postdata:', JSON.stringify(req.body));
+  const event_type = req.body.event_type;
+  if (event_type !== 'message-delivered') {
+    return;
+  }
+  logger.log("Processing new message-delivered event...");
   if (!req.params.app_id) {
     res.status(405).send('app_id is mandatory!');
     return;
   }
-
   if (!req.params.token) {
     res.status(405).send('webhook token is mandatory!');
     return;
@@ -849,7 +852,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
   let axios_req = {
       url: process.env.PUSH_WH_NOTIFY_URL,
       method: 'POST',
-      data: req.body,
+      data: req.body.data,
       headers: {
           'Authorization': process.env.PUSH_WH_CHAT21_API_ADMIN_TOKEN
       },
@@ -917,7 +920,17 @@ async function startAMQP(config) {
     throw new Error('please configure process.env.RABBITMQ_URI or use parameter config.rabbimq_uri option.');
   }
   
-  const mongouri = process.env.MONGODB_URI || "mongodb://localhost:27017/chatdb";
+  let mongouri = null;
+  if (config && config.mongodb_uri) {
+    mongouri = config.mongodb_uri;
+  }
+  else if (process.env.MONGODB_URI) {
+    mongouri = process.env.MONGODB_URI;
+  }
+  else {
+    throw new Error('please configure process.env.MONGODB_URI or use parameter config.mongodb_uri option.');
+  }
+
   logger.log("Connecting to MongoDB: " + mongouri);
 
   // Create a database variable outside of the

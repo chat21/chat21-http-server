@@ -209,13 +209,12 @@ class Chat21Push {
                         }
                     }
                 }
-                logger.log("payload:", payload)
+                logger.log("Push payload:", JSON.stringify(payload));
                 // admin.messaging().sendToDevice(instance_id, payload) // LEGACY
                 // info here: https://firebase.google.com/docs/cloud-messaging/send-message
                 admin.messaging().send(payload)
                 .then((response) => {
                     logger.log("Push notification sent for message:", JSON.stringify(message));
-                    logger.log("  Push payload:", JSON.stringify(payload));
                     logger.log("  Token (aka instance_id):", instance_id);
                     logger.log("  Platform:", platform);
                     logger.log("  Response:", JSON.stringify(response));

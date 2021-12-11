@@ -1,7 +1,12 @@
 
+## v0.2.5
+- added support for the new outgoing path apps.appId.outgoing
+- added push notification support for observer -> message-delivered event
+
 ## v0.2.4
 - added support for instance_id removal on push notification sending error
 - added PUSH_ENABLED=true|false in .env
+- added support for config.mongodb_uri in startAMQP()
 
 ## v0.2.3
 - Embedded (temporarily) the push notifications webhook endpoint in chatApis
