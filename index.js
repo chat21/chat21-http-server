@@ -89,8 +89,9 @@ app.get(BASEURL + "/:appid/:userid/conversations", (req, res) => {
   }
   logger.debug("Go with conversations!")
   conversations(req, false, function(err, docs) {
-    logger.debug("got conversations", docs, err)
+    logger.debug("Got conversations.");
     if (err) {
+      logger.error("Error getting conversations", err);
       const reply = {
           success: false,
           err: err.message()
@@ -815,7 +816,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
   */
 
 
-  chatpush.sendNotification(req.body.data.app_id, req.body.data, req.body.data.sender, req.body.deliver_to);
+  chatpush.sendNotification(req.body.data.app_id, req.body.data, req.body.data.sender, req.body.delivered_to);
 
 });
 
