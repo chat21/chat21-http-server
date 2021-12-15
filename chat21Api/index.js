@@ -486,6 +486,7 @@ class Chat21Api {
                 messages.forEach(message => {
                     // TODO: CHECK IF MESSAGE WAS ALREADY DELIVERED. (CLIENT? SERVER?)
                     message["__history"] = "true"
+                    message.status = 150; // DELIVERED
                     logger.debug("Delivering message: " + message.text)
                     this.deliverMessage(appid, message, inbox_of, convers_with_group, (err) => {
                         if (err) {
