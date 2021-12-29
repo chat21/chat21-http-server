@@ -1,4 +1,7 @@
 
+## v0.2.8
+- chat21Api.joinGroupMessages(): forced message.status = 150 in history messages after a join
+
 ## v0.2.5
 - added support for the new outgoing path apps.appId.outgoing
 - added push notification support for observer -> message-delivered event

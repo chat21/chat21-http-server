@@ -1,6 +1,6 @@
 {
   "name": "@chat21/chat21-http-server",
-  "version": "0.2.5",
+  "version": "0.2.8",
   "description": "Chat21 HTTP APIs",
   "main": "index.js",
   "dependencies": {
@@ -21,7 +21,7 @@
     "https": "^1.0.0"
   },
   "devDependencies": {
-    "@chat21/chat21-server": "0.2.1",
+    "@chat21/chat21-server": "0.2.5",
     "chai": "^4.3.4",
     "chai-http": "^4.3.0",
     "mocha": "^9.0.2"
