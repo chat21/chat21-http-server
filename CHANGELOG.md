@@ -1,4 +1,7 @@
 
+## v0.2.9
+- added /:appid/:userid/archived_conversations/:conversWith endpoint
+
 ## v0.2.8
 - chat21Api.joinGroupMessages(): forced message.status = 150 in history messages after a join
 

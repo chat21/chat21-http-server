@@ -172,7 +172,7 @@ app.get(BASEURL + "/:appid/:userid/conversations/:conversWith", (req, res) => {
   if (!authorize(req, res)) {
     return
   }
-  conversationDetail(req, function(err, docs) {
+  conversationDetail(req, false, function(err, docs) {
     if (err) {
       const reply = {
           success: false,
@@ -190,12 +190,35 @@ app.get(BASEURL + "/:appid/:userid/conversations/:conversWith", (req, res) => {
   })
 })
 
-function conversationDetail(req, callback) {
+app.get(BASEURL + "/:appid/:userid/archived_conversations/:conversWith", (req, res) => {
+  logger.debug("HTTP: GET /:appid/:userid/conversations/:conversWith");
+  if (!authorize(req, res)) {
+    return
+  }
+  conversationDetail(req, true, function(err, docs) {
+    if (err) {
+      const reply = {
+          success: false,
+          err: err.message()
+      }
+      res.status(501).send(reply)
+    }
+    else {
+      const reply = {
+        success: true,
+        result: docs
+      }
+      res.status(200).json(reply)
+    }
+  })
+})
+
+function conversationDetail(req, archived, callback) {
   // logger.debug("getting /:appid/:userid/archived_conversations")
   const appid = req.params.appid
   const userid = req.params.userid
   const conversWith = req.params.conversWith
-  chatdb.conversationDetail(appid, userid, conversWith, function(err, docs) {
+  chatdb.conversationDetail(appid, userid, conversWith, archived, function(err, docs) {
     callback(err, docs);
   });
 }
