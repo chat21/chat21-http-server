@@ -23,7 +23,15 @@ async function start() {
                   console.log('HTTPS server started.')
                   console.log('Starting AMQP publisher...');
                   //chat21HttpServer.startAMQP();
-                  chat21HttpServer.startAMQP({rabbitmq_uri: process.env.RABBITMQ_URI});
+                  chat21HttpServer.startAMQP(
+                        {
+                              rabbitmq_uri: process.env.RABBITMQ_URI,
+                              REDIS_HOST: process.env.REDIS_HOST,
+                              REDIS_PORT: process.env.REDIS_PORT,
+                              REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+                              CACHE_ENABLED: process.env.CACHE_ENABLED
+                        }
+                  );
             });
       }
       else {
@@ -32,7 +40,15 @@ async function start() {
                   console.log('HTTP server started.')
                   console.log('Starting AMQP publisher...');
                   //chat21HttpServer.startAMQP();
-                  chat21HttpServer.startAMQP({rabbitmq_uri: process.env.RABBITMQ_URI});
+                  chat21HttpServer.startAMQP(
+                        {
+                              rabbitmq_uri: process.env.RABBITMQ_URI,
+                              REDIS_HOST: process.env.REDIS_HOST,
+                              REDIS_PORT: process.env.REDIS_PORT,
+                              REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+                              CACHE_ENABLED: process.env.CACHE_ENABLED
+                        }
+                  );
             });
       }
       

@@ -4,15 +4,15 @@
 */
 
 /**
- * Chat21Api for NodeJS
+ * Chat21Api
  */
-// const winston = require("../winston");
+
 const logger = require('../tiledesk-logger').logger;
-// var MessageConstants = require("../models/messageConstants");
 
 var amqp = require('amqplib/callback_api');
 const { uuid } = require('uuidv4');
 const { JsonWebTokenError } = require('jsonwebtoken');
+const { Contacts } = require('../Contacts.js');
 
 class Chat21Api {
     
@@ -39,6 +39,7 @@ class Chat21Api {
         this.offlinePubQueue = [];
         this.amqpConn = null;
         this.rabbitmq_uri = options.rabbitmq_uri;
+        this.contacts = options.contacts;
     }
 
     archiveConversation(app_id, user_id, convers_with, callback) {
@@ -102,19 +103,20 @@ class Chat21Api {
                 //         callback(err);
                 //     }
                 //     else {
-                this.sendGroupWelcomeMessage(group, (err) => {
+                this.sendGroupWelcomeMessage(group, async (err) => {
                     if (err) {
                         logger.error('An error occurred during group creation, sendGroupWelcomeMessage To Initial Members', err)
                         callback(err);
                     }
                     else {
-                        logger.debug("SENDING 'MEMBER_JOINED_GROUP' FOR EACH MEMBER TO EACH MEMBER...", group);
+                        console.log("SENDING 'MEMBER_JOINED_GROUP' FOR EACH MEMBER TO EACH MEMBER...", group);
                         const appid = group.appId
                         for (let [member_id, value] of Object.entries(group.members)) {
-                            logger.debug("Sending: '" + member_id + " added to group on creation', to the group: " + group.uid);
+                            console.log("Sending: '" + member_id + " added to group on creation', to the group: " + group.uid);
+                            const joined_member = await this.getContact(member_id);
                             const message = {
                                 type: "text",
-                                text: member_id + " joined group on creation",
+                                text: joined_member.fullname + " joined group on creation",
                                 timestamp: Date.now(),
                                 channel_type: "group",
                                 sender_fullname: "System",
@@ -127,13 +129,15 @@ class Chat21Api {
                                     messagelabel: {
                                         key: "MEMBER_JOINED_GROUP",
                                         parameters: {
-                                            member_id: member_id
-                                            // fullname: fullname // OPTIONAL
+                                            member_id: member_id,
+                                            fullname: joined_member.fullname,
+                                            firstname: joined_member.firstname,
+                                            lastname: joined_member.lastname
                                         }
                                     }
                                 }
                             }
-                            logger.debug("Member joined group message:", message)
+                            console.log("Member joined group message:", message)
                             this.sendMessageRaw(
                                 appid,
                                 message,
@@ -143,7 +147,7 @@ class Chat21Api {
                                         return
                                     }
                                     else {
-                                        logger.debug("SENT MESSAGE TO: " + group.uid)
+                                        console.log("SENT MESSAGE TO: " + group.uid)
                                     }
                                 }
                             );
@@ -242,8 +246,9 @@ class Chat21Api {
         })
     }
 
-    addMemberToGroupAndNotifyUpdate(user, joined_member_id, group_id, callback) {
-        logger.debug("addMemberToGroupAndNotifyUpdate()")
+    async addMemberToGroupAndNotifyUpdate(user, joined_member_id, group_id, callback) {
+        logger.debug("addMemberToGroupAndNotifyUpdate()");
+        const joined_member = await this.getContact(joined_member_id);
         this.chatdb.getGroup(group_id, (err, group) => {
             logger.debug("found group", group)
             if (err || !group) {
@@ -285,9 +290,6 @@ class Chat21Api {
                     logger.debug("new members:", group.members)
                     this.chatdb.joinGroup(group_id, joined_member_id, (err) => {
                         logger.log("Member", joined_member_id, "joined group");
-                        logger.debug("Member", joined_member_id, "joined group");
-                        logger.log("Member", joined_member_id, "joined group");
-                        logger.debug("Member", joined_member_id, "joined group");
                         if (err) {
                             logger.error("An error occurred:", err)
                             const reply = {
@@ -303,8 +305,10 @@ class Chat21Api {
                             let message_label = {
                                 key: "MEMBER_JOINED_GROUP",
                                 parameters: {
-                                    member_id: joined_member_id
-                                    // fullname: fullname // OPTIONAL
+                                    member_id: joined_member_id,
+                                    fullname: joined_member.fullname,
+                                    firstname: joined_member.firstname,
+                                    lastname: joined_member.lastname
                                 }
                             }
                             let notification = {
@@ -979,6 +983,32 @@ class Chat21Api {
                 })
             })
         })
+    }
+
+    // async getContact(joined_member_id) {
+    //     logger.debug('getting joned member name by joined_member_id:', joined_member_id);
+    //     const contacts = new Contacts({
+    //       CONTACTS_LOOKUP_ENDPOINT: process.env.CONTACTS_LOOKUP_ENDPOINT,
+    //       tdcache: tdcache,
+    //       log: true
+    //     });
+    //     const joined_member_name = await this.contacts.getContact(joined_member_id);
+    //     logger.debug('joined member name:', joined_member_name);
+    // }
+
+    async getContact(joined_member_id) {
+        logger.debug('getting joned member name by joined_member_id:', joined_member_id);
+        let joined_member = await this.contacts.getContact(joined_member_id);
+        logger.debug('joined member:', joined_member);
+        if (!joined_member) {
+            joined_member = {
+                firstname: "",
+                lastname: "",
+                fullname: joined_member_id,
+            }
+        }
+        joined_member.fullname = Contacts.getFullnameOf(joined_member);
+        return joined_member;
     }
 
 // ****************************************************************

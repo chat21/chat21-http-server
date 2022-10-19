@@ -14,8 +14,12 @@ const { ChatDB } = require('./chatdb/index.js');
 const { Chat21Api } = require('./chat21Api/index.js');
 const { Chat21Push } = require('./sendpush/index.js');
 let logger = require('./tiledesk-logger').logger;
+console.log("Logger level:", logger.logLevel);
 const axios = require('axios'); // ONLY FOR TEMP PUSH WEBHOOK ENDPOINT
 const https = require('https'); // ONLY FOR TEMP PUSH WEBHOOK ENDPOINT
+const { TdCache } = require('./TdCache.js');
+const { Contacts } = require('./Contacts.js');
+let tdcache = null;
 
 const jwtKey = process.env.JWT_KEY || "tokenKey";
 const BASEURL = process.env.BASEURL || '/api';
@@ -45,7 +49,6 @@ app.use(function (req, res, next) {
     return;
   }
   const jwt = decodejwt(req)
-  console.log("jwt:", jwt)
   if (jwt) {
     // adds "user" to req
     req['user'] = {
@@ -517,7 +520,7 @@ app.get(BASEURL + '/:appid/groups/:group_id', (req, res) => {
 });
 
 /** Join a group */
-app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
+app.post(BASEURL + '/:appid/groups/:group_id/members', async (req, res) => {
   logger.debug('HTTP: Join a group. adds a member to a group', req.body, req.params);
   if (!authorize(req, res)) {
     logger.debug("Unauthorized")
@@ -534,7 +537,7 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
   logger.debug('joined_member_id', joined_member_id);
   logger.debug('group_id', group_id);
   // logger.debug('chatapi', chatapi);
-  chatapi.addMemberToGroupAndNotifyUpdate(req.user, joined_member_id, group_id, function(err, group) {
+  chatapi.addMemberToGroupAndNotifyUpdate(req.user, joined_member_id, group_id, async (err, group) => {
     logger.debug("THE GROUP:", group)
     if (err) {
       logger.error("An error occurred while a member was joining the group", err)
@@ -547,11 +550,14 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', (req, res) => {
     }
     else if (group) {
       logger.debug("Notifying to other members and coping old group messages to new user timeline...")
+      const joined_member = await chatapi.getContact(joined_member_id);
       let message_label = {
         key: "MEMBER_JOINED_GROUP",
         parameters: {
-            member_id: joined_member_id
-            // fullname: fullname // OPTIONAL
+          member_id: joined_member_id,
+          fullname: joined_member.fullname,
+          firstname: joined_member.firstname,
+          lastname: joined_member.lastname
         }
       };
       chatapi.joinGroupMessages(joined_member_id, group, message_label, function(err) {
@@ -941,7 +947,16 @@ async function startAMQP(config) {
     rabbitmq_uri = process.env.RABBITMQ_URI;
   }
   else {
-    throw new Error('please configure process.env.RABBITMQ_URI or use parameter config.rabbimq_uri option.');
+    throw new Error('(Chat21-http) please configure process.env.RABBITMQ_URI or use parameter config.rabbimq_uri option.');
+  }
+
+  // redis
+  if (config && config.REDIS_HOST && config.REDIS_PORT && config.CACHE_ENABLED) {
+    tdcache = new TdCache({
+      host: config.REDIS_HOST,
+      port: config.REDIS_PORT,
+      password: config.REDIS_PASSWORD
+    });
   }
   
   let mongouri = null;
@@ -955,7 +970,7 @@ async function startAMQP(config) {
     throw new Error('please configure process.env.MONGODB_URI or use parameter config.mongodb_uri option.');
   }
 
-  logger.log("Connecting to MongoDB: " + mongouri);
+  logger.info("(Chat21-http) Connecting to MongoDB: " + mongouri);
 
   // Create a database variable outside of the
   // database connection callback to reuse the connection pool in the app.
@@ -965,17 +980,45 @@ async function startAMQP(config) {
     client = await mongodb.MongoClient.connect(mongouri, { useNewUrlParser: true, useUnifiedTopology: true })
   }
   catch(error) {
-    logger.error("(ChatHttpServer) An error occurred during connection to MongoDB:", error);
+    logger.error("(Chat21-http) An error occurred during connection to MongoDB:", error);
     process.exit(1);
   }
-  logger.log("MongoDB connected.")
+  logger.info("(Chat21-http) MongoDB connected.")
   db = client.db();
   chatdb = new ChatDB({database: db})
-  
-  chatapi = new Chat21Api({exchange: 'amq.topic', database: chatdb, rabbitmq_uri: rabbitmq_uri});
   chatpush = new Chat21Push({database: chatdb});
+  if (tdcache) {
+    logger.info("(Chat21-http) connecting to tdcache (Redis)...");
+    try {
+      await tdcache.connect();
+      logger.info("(Chat21-http) tdcache (Redis) connected.");
+    }
+    catch (error) {
+      tdcache = null;
+      console.error("(Chat21-http) tdcache (Redis) connection error:", error);
+    }
+    console.info("(Chat21-http) tdcache (Redis) connected.");
+  }
+  let contacts_endpoint = process.env.CONTACTS_LOOKUP_ENDPOINT;
+  if (config.CONTACTS_LOOKUP_ENDPOINT) {
+    contacts_endpoint = config.CONTACTS_LOOKUP_ENDPOINT;
+  }
+  const contacts = new Contacts({
+    CONTACTS_LOOKUP_ENDPOINT: contacts_endpoint,
+    tdcache: tdcache,
+    log: true
+  });
+
+  chatapi = new Chat21Api(
+  {
+    exchange: 'amq.topic',
+    database: chatdb,
+    rabbitmq_uri: rabbitmq_uri,
+    contacts: contacts
+  });
   var amqpConnection = await chatapi.start();
-  logger.log("[AMQP] connected.");
+  logger.info("(Chat21-http) [AMQP] connected.");
+  logger.info("(Chat21-http) started.");
 }
 
 // let rabbitmq_uri;

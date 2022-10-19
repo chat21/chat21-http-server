@@ -146,9 +146,9 @@ class ChatDB {
     });
   }
 
-  conversationDetail(appid, userid, conversWith, archived, callback) {
-    winston.info("DB. app: "+ appid+ " user: " + userid + " conversWith: "+ conversWith);
-    this.db.collection(this.conversations_collection).find( { timelineOf: userid, app_id: appid, conversWith: conversWith, archived: archived } ).limit(1).toArray(function(err, docs) {
+  conversationDetail(appid, timelineOf, conversWith, archived, callback) {
+    winston.info("DB. app: "+ appid+ " user: " + timelineOf + " conversWith: "+ conversWith);
+    this.db.collection(this.conversations_collection).find( { timelineOf: timelineOf, app_id: appid, conversWith: conversWith, archived: archived } ).limit(1).toArray(function(err, docs) {
       if (err) {
         if (callback) {
           callback(err, null)

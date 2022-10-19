@@ -1,6 +1,21 @@
 
+**npm @chat21/chat21-http-server@0.2.11**
+
+available on:
+ ▶️ https://www.npmjs.com/package/@chat21/chat21-http-server
+
+## v0.2.11
+- test, added embedded CONTACTS_LOOKUP_ENDPOINT
+- test, fixed await tdcache
+
+## v0.2.10
+- added Contacts class
+- added Redis support
+- added in .env: CONTACTS_LOOKUP_ENDPOINT, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT, CACHE_ENABLED
+
 ## v0.2.9
 - added /:appid/:userid/archived_conversations/:conversWith endpoint
+- fixed conversationDetail() bug (not discrimitating history/archived conversations)
 
 ## v0.2.8
 - chat21Api.joinGroupMessages(): forced message.status = 150 in history messages after a join
