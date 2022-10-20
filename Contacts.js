@@ -45,7 +45,15 @@ class Contacts {
             method: 'GET'
         };
         let contact = null;
-        contact = await this.myrequest(HTTPREQUEST);
+        try {
+            contact = await this.myrequest(HTTPREQUEST);
+        }
+        catch(error) {
+            if (this.log) {
+                console.error("User not found:", URL)
+            }
+            return null;
+        }
         if (contact) {
             const contact_key = "contacts:" + contact_id;
             if (this.log) {
@@ -61,24 +69,6 @@ class Contacts {
             }
         }
         return contact;
-        //     (err, contact) => {
-        //     if (err) {
-        //         if (callback) {
-        //             callback(err);
-        //         }
-        //     }
-        //     else {
-        //         if (contact) {
-        //             console.log("contact found", contact);
-        //             const contact_string = JSON.stringify(contact);
-        //             this.tdcache.set("contacts:" + contact_id, contact_string, { EX: 120 });
-        //         }
-        //         if (callback) {
-        //             callback(null, contact);
-        //         }
-        //         return contact;
-        //     }
-        // });
     }
 
     static getFullnameOf(contact) {
@@ -134,7 +124,6 @@ class Contacts {
                 }
             })
             .catch( (error) => {
-                console.error("An error occurred:", error);
                 if (callback) {
                     callback(error, null);
                 }

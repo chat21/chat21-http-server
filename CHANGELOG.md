@@ -1,8 +1,15 @@
 
-**npm @chat21/chat21-http-server@0.2.11**
+**npm @chat21/chat21-http-server@0.2.13**
 
 available on:
  ▶️ https://www.npmjs.com/package/@chat21/chat21-http-server
+
+## v0.2.13
+- added testing for Contacts.js
+- Contacts.js bug fix
+
+## v0.2.12
+- updated with docker node image: 16
 
 ## v0.2.11
 - test, added embedded CONTACTS_LOOKUP_ENDPOINT
