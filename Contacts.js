@@ -17,24 +17,31 @@ class Contacts {
         if (this.log) {
             console.log("Getting contacts:", contact_id);
             console.log("Getting contacts CONTACTS_LOOKUP_ENDPOINT", this.CONTACTS_LOOKUP_ENDPOINT);
-            console.log("Getting contacts tdcache", this.tdcache);
         }
+        const contact_key = "contacts:" + contact_id;
         if (this.tdcache) {
-            let contact_string = await this.tdcache.get("contacts:" + contact_id);
-            if (contact_string) {
-                const contact = JSON.parse(contact_string);
-                if (contact) {
-                    contact.cached = true;
-                    if (callback) {
-                        callback(contact);
+            let contact_string = null;
+            try {
+                contact_string = await this.tdcache.get(contact_key);
+                if (contact_string) {
+                    const contact = JSON.parse(contact_string);
+                    if (contact) {
+                        contact.cached = true;
+                        if (callback) {
+                            callback(contact);
+                        }
+                        return contact;
                     }
-                    return contact;
                 }
+            }
+            catch (error) {
+                console.error("An error occurred getting redis:", contact_key);
             }
         }
         const URL = `${this.CONTACTS_LOOKUP_ENDPOINT}/${contact_id}`
         if (this.log) {
-            console.log("Contacts URL:", URL)
+            console.log("Redis failed for:", contact_key);
+            console.log("Getting contact on URL:", URL);
         }
         const HTTPREQUEST = {
             url: URL,

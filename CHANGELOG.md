@@ -1,12 +1,16 @@
 
-**npm @chat21/chat21-http-server@0.2.13**
+**npm @chat21/chat21-http-server@0.2.14**
 
 available on:
  ▶️ https://www.npmjs.com/package/@chat21/chat21-http-server
 
+## v0.2.14
+- Fixed bug: MEMBER_JOINED_GROUP never updated in chat21Api.setGroupMembers()
+- Fixed bug: Contacts.getContact() now correctly manages Redis errors
+
 ## v0.2.13
 - added testing for Contacts.js
-- Contacts.js bug fix
+- Contacts.js bug fix (managing "not found" user)
 
 ## v0.2.12
 - updated with docker node image: 16

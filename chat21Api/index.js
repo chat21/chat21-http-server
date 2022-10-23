@@ -446,6 +446,7 @@ class Chat21Api {
                 messagelabel: message_label
             }
         }
+        logger.debug("'system' sends 'added to group' message:" + JSON.stringify(message))
         this.sendMessageRaw(
             appid,
             message,
@@ -869,7 +870,7 @@ class Chat21Api {
                 // let notification = {
                 //     messagelabel: message_label
                 // };
-                this.notifyGroupUpdate(group, original_members, null, (err) => { // TO ORIGINAL MEMBERS
+                this.notifyGroupUpdate(group, original_members, null, async (err) => { // TO ORIGINAL MEMBERS
                     if (err) {
                         logger.error("notifyGroupUpdate Error", err);
                         if (callback) {
@@ -882,7 +883,17 @@ class Chat21Api {
                     logger.log("*****added members", added_members)
                     for (let [member_id, value] of Object.entries(added_members)) {
                         logger.debug(">>>>> JOINING MEMBER: " + member_id)
-                        this.joinGroupMessages(member_id, group, null, function (reply) {
+                        const joined_member = await this.getContact(member_id);
+                        const messagelabel = {
+                            key: "MEMBER_JOINED_GROUP",
+                            parameters: {
+                                member_id: member_id,
+                                fullname: joined_member.fullname,
+                                firstname: joined_member.firstname,
+                                lastname: joined_member.lastname
+                            }
+                        }
+                        this.joinGroupMessages(member_id, group, messagelabel, function (reply) {
                             logger.debug("member " + member_id + " invited on group " + group_id + " result " + reply)
                         })
                     }
