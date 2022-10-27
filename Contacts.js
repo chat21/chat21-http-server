@@ -16,7 +16,22 @@ class Contacts {
     async getContact(contact_id, callback) {
         if (this.log) {
             console.log("Getting contacts:", contact_id);
-            console.log("Getting contacts CONTACTS_LOOKUP_ENDPOINT", this.CONTACTS_LOOKUP_ENDPOINT);
+            console.log("Getting contacts using CONTACTS_LOOKUP_ENDPOINT", this.CONTACTS_LOOKUP_ENDPOINT);
+        }
+        if (!this.CONTACTS_LOOKUP_ENDPOINT) {
+            if (this.log) {
+                console.log("CONTACTS_LOOKUP_ENDPOINT is null");
+            }
+            const empty_contact = {
+                firstname: "",
+                lastname: "",
+                fullname: contact_id,
+                error: "CONTACTS_LOOKUP_ENDPOINT is null",
+            }
+            if (callback) {
+                callback(empty_contact);
+            }
+            return empty_contact;
         }
         const contact_key = "contacts:" + contact_id;
         if (this.tdcache) {
@@ -24,6 +39,9 @@ class Contacts {
             try {
                 contact_string = await this.tdcache.get(contact_key);
                 if (contact_string) {
+                    if (this.log) {
+                        console.log("Got contact from redis cache:", contact_string);
+                    }
                     const contact = JSON.parse(contact_string);
                     if (contact) {
                         contact.cached = true;

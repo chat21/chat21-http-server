@@ -212,13 +212,9 @@ describe('MessageRoute', () => {
         console.log("req.body webhook:", JSON.stringify(req.body));
         if (req.body.event_type == "message-sent") {
           expect(req.body.data.channel_type).to.equal("group");
-          console.log("ok1");
           expect(req.body.data.recipient).to.equal(recipient_id);
-          console.log("ok2");
           expect(req.body.data.recipient_fullname).to.equal(GROUP_NAME);
-          console.log("ok3");
           expect(req.body.data.status).to.equal(100);
-          console.log("ok4");
           if (
             req.body.data.text === SENT_MESSAGE &&
             req.body.data.sender === user1.id &&
@@ -255,7 +251,6 @@ describe('MessageRoute', () => {
             console.log("other text", req.body.data.text);
           }
           // expect(req.body.data.timelineOf).to.equal("5f09983d20f76b0019af7190");
-          console.log("count", count);
           if (count == 4) {
             listener.close(function () { console.log('listener closed :('); });
             done();

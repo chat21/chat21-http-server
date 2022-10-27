@@ -137,7 +137,7 @@ class Chat21Api {
                                     }
                                 }
                             }
-                            console.log("Member joined group message:", message)
+                            console.log("Member joined group message:", JSON.stringify(message))
                             this.sendMessageRaw(
                                 appid,
                                 message,
@@ -1010,7 +1010,7 @@ class Chat21Api {
     async getContact(joined_member_id) {
         logger.debug('getting joned member name by joined_member_id:', joined_member_id);
         let joined_member = await this.contacts.getContact(joined_member_id);
-        logger.debug('joined member:', joined_member);
+        logger.debug('joined member:', JSON.stringify(joined_member));
         if (!joined_member) {
             joined_member = {
                 firstname: "",
