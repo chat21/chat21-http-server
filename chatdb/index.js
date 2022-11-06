@@ -76,12 +76,14 @@ class ChatDB {
   saveOrUpdateGroup(group, callback) {
     // winston.debug("saving group...", group)
     this.db.collection(this.groups_collection).updateOne( { uid: group.uid }, { $set: group }, { upsert: true }, function(err, doc) {
-      if (callback) {
-        callback(err)
+      if (err) {
+        if (callback) {
+          callback(err);
+        }
       }
       else {
         if (callback) {
-          callback(null)
+          callback(null);
         }
       }
     });

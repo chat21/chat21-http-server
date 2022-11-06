@@ -265,7 +265,7 @@ app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) =
     })
 })
 
-/** Delete a conversation */
+/** Delete (Archive) a conversation */
 app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
   logger.debug('HTTP: delete: Conversation. req.params:', req.params, 'req.body:', req.body)
 
@@ -951,12 +951,18 @@ async function startAMQP(config) {
   }
 
   // redis
-  if (config && config.REDIS_HOST && config.REDIS_PORT && config.CACHE_ENABLED) {
-    tdcache = new TdCache({
-      host: config.REDIS_HOST,
-      port: config.REDIS_PORT,
-      password: config.REDIS_PASSWORD
-    });
+  if (config.CACHE_ENABLED == undefined || (config.CACHE_ENABLED && config.CACHE_ENABLED !== 'true')) {
+    console.log("(Chat21-http) Cache (Redis) disabled.");
+  }
+  else {
+    console.log("(Chat21-http) Cache (Redis) enabled.");
+    if (config && config.REDIS_HOST && config.REDIS_PORT) {
+      tdcache = new TdCache({
+        host: config.REDIS_HOST,
+        port: config.REDIS_PORT,
+        password: config.REDIS_PASSWORD
+      });
+    }
   }
   
   let mongouri = null;
@@ -970,7 +976,7 @@ async function startAMQP(config) {
     throw new Error('please configure process.env.MONGODB_URI or use parameter config.mongodb_uri option.');
   }
 
-  logger.info("(Chat21-http) Connecting to MongoDB: " + mongouri);
+  logger.info("(Chat21-http) Connecting to MongoDB...");
 
   // Create a database variable outside of the
   // database connection callback to reuse the connection pool in the app.
@@ -1018,7 +1024,7 @@ async function startAMQP(config) {
   });
   var amqpConnection = await chatapi.start();
   logger.info("(Chat21-http) [AMQP] connected.");
-  logger.info("(Chat21-http) started.");
+  logger.info("(Chat21-http) Server started.");
 }
 
 // let rabbitmq_uri;

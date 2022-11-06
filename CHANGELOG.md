@@ -1,8 +1,17 @@
 
-**npm @chat21/chat21-http-server@0.2.14**
+**npm @chat21/chat21-http-server@0.2.16**
 
 available on:
  ▶️ https://www.npmjs.com/package/@chat21/chat21-http-server
+
+## v0.2.16
+- fixed sonar-notified error on saveOrUpdateGroup()
+- console.log fixing
+
+## v0.2.15
+- Improved Contacts.js: when no endpoint is provided it replies with a mock contact.fullname = contact_id
+- Renamed testing files, added _test postfix
+- New 0.2.15 npm package
 
 ## v0.2.14
 - Fixed bug: MEMBER_JOINED_GROUP never updated in chat21Api.setGroupMembers()

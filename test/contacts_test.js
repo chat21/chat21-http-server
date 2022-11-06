@@ -54,7 +54,7 @@ before( () => {
 after(function(done) {
     console.log("after - Ending test...");
     contactsListener.close((err) => {
-        console.log('contactsListener closed');
+        console.log('contactsListener closed.');
         done();
         //process.exit(err ? 1 : 0);
     });

@@ -125,7 +125,7 @@ describe('MessageRoute', () => {
           expect(req.body.data.channel_type).to.equal("direct");
           // expect(req.body.data.timelineOf).to.equal("5f09983d20f76b0019af7190");
           res.send({ text: "ok from webhook" });
-          listener.close(function () { console.log('listener closed :('); });
+          listener.close(function () { console.log(' :('); });
           done();
         }
       });
@@ -170,7 +170,7 @@ describe('MessageRoute', () => {
           expect(req.body.data.recipient_fullname).to.equal(user2.fullname);
           expect(req.body.data.channel_type).to.equal("direct");        
           res.send({ text: "ok from webhook" });
-          listener.close(function () { console.log('listener closed :('); });
+          listener.close(function () { console.log('listener closed.'); });
           done();
         }
       });
@@ -252,7 +252,7 @@ describe('MessageRoute', () => {
           }
           // expect(req.body.data.timelineOf).to.equal("5f09983d20f76b0019af7190");
           if (count == 4) {
-            listener.close(function () { console.log('listener closed :('); });
+            listener.close(function () { console.log('listener closed.'); });
             done();
           }
           res.send({ text: "ok from webhook" });
