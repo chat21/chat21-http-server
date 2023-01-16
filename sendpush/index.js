@@ -15,6 +15,11 @@ if (process.env.PUSH_ENABLED == undefined || (process.env.PUSH_ENABLED && proces
 }
 else {
     logger.log("PUSH NOTIFICATIONS: ON");
+    
+    logger.log("project_id", process.env.FIREBASE_PROJECT_ID);
+    logger.log("private_key", process.env.FIREBASE_PRIVATE_KEY);
+    logger.log("client_email", process.env.FIREBASE_CLIENT_EMAIL);
+
     if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
         const serviceAccount = {
             "project_id": process.env.FIREBASE_PROJECT_ID,
