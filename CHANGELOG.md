@@ -4,6 +4,9 @@
 available on:
  ▶️ https://www.npmjs.com/package/@chat21/chat21-http-server
 
+## v0.2.18
+- firebase private key fix 
+
 ## v0.2.17
 - logged FIREBASE push env variables
 
