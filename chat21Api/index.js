@@ -493,6 +493,12 @@ class Chat21Api {
                     message["__history"] = "true"
                     message.status = 150; // DELIVERED
                     logger.debug("Delivering message: " + message.text)
+
+
+                    if (message.attributes && message.attributes.forcenotification == false) { 
+                        message.attributes.sendnotification = false;
+                    }
+
                     this.deliverMessage(appid, message, inbox_of, convers_with_group, (err) => {
                         if (err) {
                             logger.error("error delivering message to joined member", inbox_of)
