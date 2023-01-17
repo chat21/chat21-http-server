@@ -494,11 +494,20 @@ class Chat21Api {
                     message.status = 150; // DELIVERED
                     logger.debug("Delivering message: " + message.text)
 
+                    // logger.debug("message",  message);
 
-                    if (message.attributes && message.attributes.forcenotification != true) { 
-                        message.attributes.sendnotification = false;
+
+                    if (!message.attributes) {
+                        // logger.debug("creating empty attributes for message " + message.text);
+                        message.attributes = {};
                     }
 
+                    if (message.attributes.forcenotification != true) { 
+                        message.attributes.sendnotification = false;
+                        // logger.debug("setting message.attributes.sendnotification = false for message with text" + message.text);
+                    }
+
+                    // problema se messaggio non ha attributers... devi crearlo
                     this.deliverMessage(appid, message, inbox_of, convers_with_group, (err) => {
                         if (err) {
                             logger.error("error delivering message to joined member", inbox_of)

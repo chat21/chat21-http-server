@@ -4,6 +4,9 @@
 available on:
  ▶️ https://www.npmjs.com/package/@chat21/chat21-http-server
 
+## v0.2.21
+- Send single push notification fix
+
 ## v0.2.20
 - Send single push notification fix
 
