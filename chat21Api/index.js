@@ -495,7 +495,7 @@ class Chat21Api {
                     logger.debug("Delivering message: " + message.text)
 
 
-                    if (message.attributes && message.attributes.forcenotification == false) { 
+                    if (message.attributes && message.attributes.forcenotification != true) { 
                         message.attributes.sendnotification = false;
                     }
 
