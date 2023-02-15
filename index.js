@@ -844,7 +844,6 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
   }
   */
 
-
   chatpush.sendNotification(req.body.data.app_id, req.body.data, req.body.data.sender, req.body.delivered_to);
 
 });

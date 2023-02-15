@@ -4,9 +4,12 @@
 available on:
  ▶️ https://www.npmjs.com/package/@chat21/chat21-http-server
 
+## v0.2.23
+-  from if (sender_id == "system") to  if (recipient_id == "system") {
+
 ## v0.2.22
 -  Disabled to check push notification for first message if (sender_id == "system") {
-    
+
 ## v0.2.21
 - Send single push notification fix
 

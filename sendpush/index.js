@@ -100,10 +100,10 @@ class Chat21Push {
         //     return 0;
         // }
 
-        // if (sender_id == "system") { //disabled to check push notification for first message
-        //     logger.log('do not send push notification if "system" is the sender');
-        //     return 0;
-        // }
+        if (recipient_id == "system") { //disabled to check push notification for first message
+            logger.log('do not send push notification if "system" is the sender');
+            return 0;
+        }
 
         if (sender_id == recipient_id) {
             logger.log('do not send push notification to the sender itself');
