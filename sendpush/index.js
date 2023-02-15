@@ -129,6 +129,9 @@ class Chat21Push {
             logger.log('forcenotification is enabled');
         }
         const text = message.text;
+
+        logger.log('Getting allInstancesOf for recipient_id: '+recipient_id + ' app_id: '+ app_id);
+        
         // const messageTimestamp = JSON.stringify(message.timestamp);
         this.chatdb.allInstancesOf(app_id, recipient_id, (err, instances) => {
             logger.log('instances ', instances);

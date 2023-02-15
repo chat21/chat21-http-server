@@ -4,6 +4,9 @@
 available on:
  ▶️ https://www.npmjs.com/package/@chat21/chat21-http-server
 
+## v0.2.24
+- push log fix
+
 ## v0.2.23
 -  from if (sender_id == "system") to  if (recipient_id == "system") {
 
