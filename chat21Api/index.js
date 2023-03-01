@@ -429,10 +429,16 @@ class Chat21Api {
         logger.debug("'system' sends 'added to group' to (group:" + group.uid + ") - members: " + JSON.stringify(group.members))
         const appid = group.appId
         const now = Date.now()
+
+        let joined_name = joined_member_id;
+        if (message_label && message_label.parameters && message_label.parameters.firstname) {
+            joined_name = message_label.parameters.firstname;
+        }
+
         const message = {
             // message_id: uuid(),
             type: "text",
-            text: joined_member_id + " added to group",
+            text: joined_name + " added to group",
             timestamp: now,
             channel_type: "group",
             sender_fullname: "System",
