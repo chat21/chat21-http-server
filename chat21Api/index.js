@@ -109,10 +109,10 @@ class Chat21Api {
                         callback(err);
                     }
                     else {
-                        console.log("SENDING 'MEMBER_JOINED_GROUP' FOR EACH MEMBER TO EACH MEMBER...", group);
+                        // console.log("SENDING 'MEMBER_JOINED_GROUP' FOR EACH MEMBER TO EACH MEMBER...", group);
                         const appid = group.appId
                         for (let [member_id, value] of Object.entries(group.members)) {
-                            console.log("Sending: '" + member_id + " added to group on creation', to the group: " + group.uid);
+                            // console.log("Sending: '" + member_id + " added to group on creation', to the group: " + group.uid);
                             const joined_member = await this.getContact(member_id);
                             const message = {
                                 type: "text",
@@ -137,7 +137,7 @@ class Chat21Api {
                                     }
                                 }
                             }
-                            console.log("Member joined group message:", JSON.stringify(message))
+                            // console.log("Member joined group message:", JSON.stringify(message))
                             this.sendMessageRaw(
                                 appid,
                                 message,
@@ -147,7 +147,7 @@ class Chat21Api {
                                         return
                                     }
                                     else {
-                                        console.log("SENT MESSAGE TO: " + group.uid)
+                                        // console.log("SENT MESSAGE TO: " + group.uid)
                                     }
                                 }
                             );

@@ -1011,7 +1011,7 @@ async function startAMQP(config) {
   const contacts = new Contacts({
     CONTACTS_LOOKUP_ENDPOINT: contacts_endpoint,
     tdcache: tdcache,
-    log: true
+    log: false
   });
 
   chatapi = new Chat21Api(

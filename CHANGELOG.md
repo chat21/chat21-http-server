@@ -4,6 +4,9 @@
 available on:
  ▶️ https://www.npmjs.com/package/@chat21/chat21-http-server
 
+## v0.2.26
+- logs fix
+
 ## v0.2.25
 - name joining group fix
 
