@@ -133,7 +133,7 @@ class ChatDB {
 //  )
 
   lastConversations(appid, userid, archived, callback) {
-    winston.info("DB. app: "+ appid+ " user: " + userid + " archived: "+ archived)
+    winston.debug("DB. app: "+ appid+ " user: " + userid + " archived: "+ archived)
     this.db.collection(this.conversations_collection).find( { timelineOf: userid, app_id: appid, archived: archived } ).limit(200).sort( { timestamp: -1 } ).toArray(function(err, docs) {
       if (err) {
         if (callback) {
@@ -149,7 +149,7 @@ class ChatDB {
   }
 
   conversationDetail(appid, timelineOf, conversWith, archived, callback) {
-    winston.info("DB. app: "+ appid+ " user: " + timelineOf + " conversWith: "+ conversWith);
+    winston.debug("DB. app: "+ appid+ " user: " + timelineOf + " conversWith: "+ conversWith);
     this.db.collection(this.conversations_collection).find( { timelineOf: timelineOf, app_id: appid, conversWith: conversWith, archived: archived } ).limit(1).toArray(function(err, docs) {
       if (err) {
         if (callback) {

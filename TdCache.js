@@ -112,10 +112,10 @@ class TdCache {
     }
     
     async get(key, callback) {
-      // console.log("getting key", key)
+      console.log("getting key:", key)
       return new Promise( async (resolve, reject) => {
         this.client.get(key, (err, value) => {
-          // console.log("Got something with redis", key, value, err);
+          console.log("Got something with redis", key, value, err);
           if (err) {
             console.error("Error on redis get()", err);
             reject(err);

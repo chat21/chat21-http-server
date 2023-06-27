@@ -426,6 +426,7 @@ class Chat21Api {
      * @param {*} callback
      */
     joinGroupMessages(joined_member_id, group, message_label, callback) {
+        logger.log("JOINED NAME:", joined_member_id)
         logger.debug("'system' sends 'added to group' to (group:" + group.uid + ") - members: " + JSON.stringify(group.members))
         const appid = group.appId
         const now = Date.now()
@@ -465,7 +466,7 @@ class Chat21Api {
                     return
                 }
                 else {
-                    logger.debug("Sent message to: " + group.uid);
+                    logger.debug("Sent 'member joined group' message:",message, "to: " + group.uid);
                     if (callback) {
                         callback(null);
                     }
@@ -1152,7 +1153,7 @@ class Chat21Api {
             return;
         }
         try {
-            this.pubChannel.publish(this.exchange, routingKey, content, { persistent: true },
+            this.pubChannel.publish(this.exchange, routingKey, content, { persistent: false },
                 (err, ok) => {
                     logger.log("published to.", routingKey);
                     if (err) {

@@ -150,7 +150,7 @@ describe('MessageRoute', () => {
     
 
     it('sendDirectDelivered', (done) => {
-      observer.setWebHookEvents("message-delivered");             //NON SERVE CREDO 
+      observer.setWebHookEvents("message-delivered");
       observer.getWebhooks().setWebHookEvents("message-delivered");
       console.log("observer.getWebhooks().getWebHookEvents", observer.getWebhooks().getWebHookEvents());
       observer.getWebhooks().setWebHookEndpoints(["http://localhost:3001/"]);

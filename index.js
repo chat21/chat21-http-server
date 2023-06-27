@@ -473,14 +473,36 @@ function newGroupId() {
 }
 
 /** Get group data */
-app.get(BASEURL + '/:appid/groups/:group_id', (req, res) => {
+app.get(BASEURL + '/:appid/groups/:group_id', async (req, res) => {
   logger.debug("HTTP: Get group data. getting /:appid/groups/group_id")
   if (!authorize(req, res)) {
     logger.debug("Unauthorized!")
     return
   }
   const group_id = req.params.group_id
-  chatdb.getGroup(group_id, function(err, group) {
+  let cached_group = await groupFromCache(group_id);
+  console.log("cached group:", cached_group);
+  if (cached_group) {
+    im_member = cached_group.members[req.user.uid]
+    im_admin = req.user.roles.admin
+    if (im_member || im_admin) {
+      const reply = {
+        success: true,
+        result: cached_group
+      }
+      res.status(200).json(reply);
+      return;
+    }
+    else {
+      const reply = {
+        success: false,
+        err: "Permission denied"
+      }
+      res.status(401).send(reply)
+      return;
+    }
+  }
+  chatdb.getGroup(group_id, async (err, group) => {
     if (err) {
       const reply = {
           success: false,
@@ -490,6 +512,7 @@ app.get(BASEURL + '/:appid/groups/:group_id', (req, res) => {
     }
     else if (group) {
       // logger.debug("group members", group.members)
+      await saveGroupInCache(group, group_id);
       im_member = group.members[req.user.uid]
       im_admin = req.user.roles.admin
       // logger.debug("im_member:", im_member)
@@ -534,9 +557,11 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', async (req, res) => {
   const joined_member_id = req.body.member_id;
   const group_id = req.params.group_id;
   // const app_id = req.params.appid;
-  logger.debug('joined_member_id', joined_member_id);
-  logger.debug('group_id', group_id);
+  console.log('joined_member_id:', joined_member_id);
+  console.log('join group_id:', group_id);
   // logger.debug('chatapi', chatapi);
+  await resetGroupCache(group_id);
+  console.log("Got group to join to", group_id);
   chatapi.addMemberToGroupAndNotifyUpdate(req.user, joined_member_id, group_id, async (err, group) => {
     logger.debug("THE GROUP:", group)
     if (err) {
@@ -549,7 +574,7 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', async (req, res) => {
       res.status(reply.http_status).send(reply)
     }
     else if (group) {
-      logger.debug("Notifying to other members and coping old group messages to new user timeline...")
+      logger.debug("Notifying to other members and copying old group messages to new user timeline...")
       const joined_member = await chatapi.getContact(joined_member_id);
       let message_label = {
         key: "MEMBER_JOINED_GROUP",
@@ -589,7 +614,7 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', async (req, res) => {
 });
 
 /** Set members of a group */
-app.put(BASEURL + '/:app_id/groups/:group_id/members', (req, res) => {
+app.put(BASEURL + '/:app_id/groups/:group_id/members', async (req, res) => {
   logger.debug('HTTP: Set members of a group with:', req.body);
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
@@ -610,6 +635,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/members', (req, res) => {
   // logger.debug("new_members:", new_members)
   const group_id = req.params.group_id
   const user = req.user
+  await resetGroupCache(group_id);
   chatapi.setGroupMembers(user, new_members, group_id, function(err) {
     if (err) {
       res.status(405).send(err)
@@ -621,7 +647,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/members', (req, res) => {
 });
 
 /** Leave a group */
-app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', (req, res) => {
+app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', async (req, res) => {
   // app.delete('/groups/:group_id/members/:member_id', (req, res) => {
   logger.debug('HTTP: Leave group');
   if (!req.params.member_id) {
@@ -644,6 +670,7 @@ app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', (req, res) 
   logger.debug('group_id:' + group_id);
   logger.debug('app_id:' + app_id);
   logger.debug('user:' + user.uid);
+  await resetGroupCache(group_id);
   chatapi.leaveGroup(user, member_id, group_id, app_id, function(err) {
     if (err) {
       res.status(405).send(err)
@@ -655,7 +682,7 @@ app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', (req, res) 
 });
 
 /** Update group (just group name) */
-app.put(BASEURL + '/:app_id/groups/:group_id', (req, res) => {
+app.put(BASEURL + '/:app_id/groups/:group_id', async (req, res) => {
   logger.debug('HTTP: Update group (just group name)');
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
@@ -672,6 +699,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id', (req, res) => {
   const group_name = req.body.group_name;
   const group_id = req.params.group_id
   const user = req.user
+  await resetGroupCache(group_id);
   chatapi.updateGroupData(user, group_name, group_id, function(err) {
     if (err) {
       res.status(405).send(err)
@@ -683,7 +711,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id', (req, res) => {
 });
 
 /** Update group custom attributes */
-app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
+app.put(BASEURL + '/:app_id/groups/:group_id/attributes', async (req, res) => {
   logger.debug('HTTP: Update group custom attributes for group:' + req.params.group_id + "body:" + JSON.stringify(req.body));
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
@@ -698,8 +726,9 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', (req, res) => {
     return
   }
   const attributes = req.body.attributes;
-  const group_id = req.params.group_id
-  const user = req.user
+  const group_id = req.params.group_id;
+  const user = req.user;
+  await resetGroupCache(group_id);
   chatapi.updateGroupAttributes(user, attributes, group_id, function(err) {
     if (err) {
       res.status(405).send(err)
@@ -931,8 +960,51 @@ function decodejwt(req) {
     return decoded
 }
 
+async function saveGroupInCache(group, group_id) {
+  if (tdcache) {
+    const group_key = "chat21:messages:groups:" + group_id;
+    await tdcache.set(
+      group_key,
+      JSON.stringify(group),
+      {EX: 86400} // 1 day
+    );
+  }
+}
 
+async function groupFromCache(group_id) {
+  logger.debug("groupFromCache() group_id:", group_id)
+  if (tdcache) {
+    const group_key = "chat21:messages:groups:" + group_id;
+    logger.debug("get from cache by group key", group_key)
+    let group = null;
+    try {
+      const group_s = await tdcache.get(group_key);
+      console.log("group_s", group_s)
+      return JSON.parse(group_s);
+    }
+    catch(err) {
+      console.error("Error getting from cache by group key", error);
+    }
+    return group;
+  }
+  else {
+    logger.log("No Redis. Returning no group from cache.");
+    return null;
+  }
+}
 
+async function resetGroupCache(group_id) {
+  if (tdcache) {
+    try {
+      const group_key = "chat21:messages:groups:" + group_id;
+      await tdcache.client.del(group_key);
+      logger.debug("removed group from cache:", group_key);
+    }
+    catch (error) {
+      console.error("An error occurred getting redis:", contact_key);
+    }
+  }
+}
 
 
 async function startAMQP(config) {

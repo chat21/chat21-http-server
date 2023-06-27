@@ -1,8 +1,23 @@
 
-**npm @chat21/chat21-http-server@0.2.16**
+**npm @chat21/chat21-http-server@0.2.28**
 
 available on:
  ▶️ https://www.npmjs.com/package/@chat21/chat21-http-server
+
+## v0.2.31
+- renamed CHAT21HTTP_REDIS_HOST, CHAT21HTTP_REDIS_PASSWORD, CHAT21HTTP_REDIS_PORT
+
+## v0.2.30
+- CACHE_ENABLED renamed in CHAT21HTTP_CACHE_ENABLED
+
+## v0.2.29
+- Wrong "persistent: true" changed to "persistent: false"
+
+## v0.2.28
+- amqplib updated v0.8.0 => v0.10.3
+
+## v0.2.27
+- addeed cache for getGroup and group modifiers methods
 
 ## v0.2.26
 - logs fix
