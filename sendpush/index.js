@@ -22,8 +22,8 @@ else {
 
         let private_key = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
     
-        logger.log("private_key", private_key);
-        logger.log("client_email", process.env.FIREBASE_CLIENT_EMAIL);
+        // logger.log("private_key", private_key);
+        // logger.log("client_email", process.env.FIREBASE_CLIENT_EMAIL);
 
 
         const serviceAccount = {
@@ -177,8 +177,8 @@ class Chat21Push {
                     notification: {
                         title: message.sender_fullname,
                         body: text,
+                        sound: "default"
                         // icon: icon,
-                        // sound: "default",
                         // click_action: clickAction,
                         // "content_available": "true",
                         // badge: "1"

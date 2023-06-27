@@ -7,6 +7,9 @@ available on:
 ## v0.2.31
 - renamed CHAT21HTTP_REDIS_HOST, CHAT21HTTP_REDIS_PASSWORD, CHAT21HTTP_REDIS_PORT
 
+## v0.2.31
+- Added sound: "default" to push notification
+
 ## v0.2.30
 - CACHE_ENABLED renamed in CHAT21HTTP_CACHE_ENABLED
 
