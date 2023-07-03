@@ -176,8 +176,8 @@ class Chat21Push {
                 const payload = {
                     notification: {
                         title: message.sender_fullname,
-                        body: text,
-                        sound: "default"
+                        body: text
+                        // sound: "default"
                         // icon: icon,
                         // click_action: clickAction,
                         // "content_available": "true",
@@ -208,7 +208,8 @@ class Chat21Push {
                     payload.android = {
                         priority: "normal",
                         notification: {
-                          clickAction: mobileClickAction
+                          clickAction: mobileClickAction,
+                          sound: "default"
                         }
                     }
                 }
@@ -219,7 +220,8 @@ class Chat21Push {
                         },
                         payload: {
                             aps: {
-                              'category': mobileClickAction
+                              'category': mobileClickAction,
+                              sound: "default"
                             }
                         }
                     }
