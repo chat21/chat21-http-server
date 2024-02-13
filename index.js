@@ -374,6 +374,7 @@ app.delete(BASEURL + '/:app_id/:group_id/conversations/timelines', async (req, r
   logger.debug('app_id:' + app_id);
   logger.debug('group_id:' + group_id);
   chatapi.removeAllConversWithConversations(app_id, group_id, function(err) {
+    logger.debug('removeAllConversWithConversations error?', err);
     if (err) {
       res.status(405).send(err)
     }
