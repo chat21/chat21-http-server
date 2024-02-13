@@ -4,6 +4,10 @@
 available on:
  ▶️ https://www.npmjs.com/package/@chat21/chat21-http-server
 
+
+## v0.2.35
+- ?
+
 ## v0.2.34
 - Fixed sound: "default" for ios/android
 

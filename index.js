@@ -352,6 +352,10 @@ app.get(BASEURL + "/:appid/:userid/conversations/archived", (req, res) => {
   });
 });
 
+app.get(BASEURL + "/:appid/getInfo", (req, res) => {
+  res.status(200).send({"v": "0.2.34.2"})
+});
+
 /** Delete all conversations from all timelines belonging to a group */
 app.delete(BASEURL + '/:app_id/:group_id/conversations/timelines', async (req, res) => {
   // app.delete('/groups/:group_id/members/:member_id', (req, res) => {
