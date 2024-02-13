@@ -224,6 +224,21 @@ class ChatDB {
    });
   }
 
+  deleteConversationsByConversWith(app_id, convers_with, callback) {
+    this.db.collection(this.instances_collection).deleteMany({app_id: app_id, conversWith: convers_with}, function(err, obj) {
+      if (err) {
+        if (callback) {
+          callback(err, null);
+        }
+      }
+      else {
+        if (callback) {
+          callback(null, obj);
+        }
+      }
+   });
+  }
+
 }
 
 module.exports = { ChatDB };

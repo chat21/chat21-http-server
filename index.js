@@ -349,8 +349,35 @@ app.get(BASEURL + "/:appid/:userid/conversations/archived", (req, res) => {
       }
       res.status(200).json(reply)
     }
-  })
-})
+  });
+});
+
+/** Delete all conversations from all timelines belonging to a group */
+app.delete(BASEURL + '/:app_id/:group_id/conversations/timelines', async (req, res) => {
+  // app.delete('/groups/:group_id/members/:member_id', (req, res) => {
+  logger.debug('HTTP: Delete all conversations from all timelines belonging to a group');
+  if (!req.params.group_id) {
+      res.status(405).send('group_id is mandatory');
+      return
+  }
+  else if (!req.params.app_id) {
+      res.status(405).send('app_id is mandatory');
+      return
+  }
+  let group_id = req.params.group_id;
+  let app_id = req.params.app_id;
+  const user = req.user
+  logger.debug('app_id:' + app_id);
+  logger.debug('group_id:' + group_id);
+  chatapi.removeAllConversWithConversations(app_id, group_id, function(err) {
+    if (err) {
+      res.status(405).send(err)
+    }
+    else {
+      res.status(200).send({success: true})
+    }
+  });
+});
 
 function authorize(req, res) {
   const appid = req.params.appid
