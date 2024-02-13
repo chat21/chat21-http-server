@@ -61,8 +61,8 @@ class Chat21Api {
      * remove all the old conversations belonging to this group, on all users timelines
      */
     removeAllConversWithConversations(app_id, convers_with, callback) {
-        // NOTE! THIS ARRIVES DIRECTLY ON THE CLIENT! REFACTOR WITH SOME "OBSERVER.APPS....ARCHIVE" TOPIC
-        this.chatdb.deleteConversationsByConversWith(convers_with, function (err, doc) {
+        logger.error("removeAllConversWithConversations()");
+        this.chatdb.deleteConversationsByConversWith(app_id, convers_with, function (err, doc) {
             if (err) {
                 logger.error("Error deleting conversatios:", err);
                 callback(err);

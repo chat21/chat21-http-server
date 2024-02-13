@@ -225,13 +225,16 @@ class ChatDB {
   }
 
   deleteConversationsByConversWith(app_id, convers_with, callback) {
+    console.log("deleteConversationsByConversWith()");
     this.db.collection(this.instances_collection).deleteMany({app_id: app_id, conversWith: convers_with}, function(err, obj) {
       if (err) {
+        console.error("deleteConversationsByConversWith() error", err);
         if (callback) {
           callback(err, null);
         }
       }
       else {
+        console.error("deleteConversationsByConversWith() ok");
         if (callback) {
           callback(null, obj);
         }
