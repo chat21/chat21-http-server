@@ -32,6 +32,9 @@ class ChatDB {
     this.db.collection(this.conversations_collection).createIndex(
       { 'timelineOf':1, "app_id": 1, "timestamp": 1, "archived": 1 }
     );
+    this.db.collection(this.conversations_collection).createIndex(
+      { "app_id": 1, "conversWith": 1}
+    );
     this.db.collection(this.groups_collection).createIndex(
       { 'uid':1 }
     );
