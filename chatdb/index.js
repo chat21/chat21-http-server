@@ -31,6 +31,9 @@ class ChatDB {
     this.db.collection(this.conversations_collection).createIndex(
       { 'timelineOf':1, "app_id": 1, "timestamp": 1, "archived": 1 }
     );
+    this.db.collection(this.conversations_collection).createIndex(
+      { "app_id": 1, "conversWith": 1}
+    );
     this.db.collection(this.groups_collection).createIndex(
       { 'uid':1 }
     );
@@ -214,6 +217,24 @@ class ChatDB {
         }
       }
       else {
+        if (callback) {
+          callback(null, obj);
+        }
+      }
+   });
+  }
+
+  deleteConversationsByConversWith(app_id, convers_with, callback) {
+    console.log("deleteConversationsByConversWith()");
+    this.db.collection(this.conversations_collection).deleteMany({app_id: app_id, conversWith: convers_with}, function(err, obj) {
+      if (err) {
+        console.error("deleteConversationsByConversWith() error", err);
+        if (callback) {
+          callback(err, null);
+        }
+      }
+      else {
+        console.log("deleteConversationsByConversWith() ok");
         if (callback) {
           callback(null, obj);
         }

@@ -57,6 +57,23 @@ class Chat21Api {
         });
     }
 
+    /** removes all conversations with this ConversWith. Used when a group is removed and you want to
+     * remove all the old conversations belonging to this group, on all users timelines
+     */
+    removeAllConversWithConversations(app_id, convers_with, callback) {
+        logger.error("removeAllConversWithConversations()");
+        this.chatdb.deleteConversationsByConversWith(app_id, convers_with, function (err, doc) {
+            if (err) {
+                logger.error("Error deleting conversatios:", err);
+                callback(err);
+                return
+            }
+            else {
+                callback(null);
+            }
+        });
+    }
+
     // createGroup(group, callback) {
     //     // 1. create group json
     //     // 2. save group json in mongodb
