@@ -1,5 +1,4 @@
-const winston = require("../winston");
-
+const logger = require("../tiledesk-logger").logger
 /* 
     Andrea Sponziello - (c) Tiledesk.com
 */
@@ -41,9 +40,8 @@ class ChatDB {
   }
 
   saveOrUpdateMessage(message, callback) {
-    winston.debug("saving message...", message)
+    logger.debug("(ChatDB) saving message...", message)
     this.db.collection(this.messages_collection).updateOne({timelineOf: message.timelineOf, message_id: message.message_id}, { $set: message }, { upsert: true }, function(err, doc) {
-      winston.debug("error...", err)
       if (err) {
         if (callback) {
           callback(err, null)
@@ -58,7 +56,7 @@ class ChatDB {
   }
 
   saveOrUpdateConversation(conversation, callback) {
-    winston.debug("saving conversation...", conversation)
+    logger.debug("(ChatDB) saving conversation...", conversation)
     this.db.collection(this.conversations_collection).updateOne({timelineOf: conversation.timelineOf, conversWith: conversation.conversWith}, { $set: conversation}, { upsert: true }, function(err, doc) {
       if (err) {
         if (callback) {
@@ -74,7 +72,6 @@ class ChatDB {
   }
 
   saveOrUpdateGroup(group, callback) {
-    // winston.debug("saving group...", group)
     this.db.collection(this.groups_collection).updateOne( { uid: group.uid }, { $set: group }, { upsert: true }, function(err, doc) {
       if (err) {
         if (callback) {
@@ -105,7 +102,7 @@ class ChatDB {
   }
 
   joinGroup(group_id, member_id, callback) {
-    winston.debug("joining group...", group_id, member_id)
+    logger.debug("(ChatDB) joining group...", group_id, member_id)
     const member_field = "members." + member_id
     const now = Date.now()
     const set_command = {
@@ -133,7 +130,7 @@ class ChatDB {
 //  )
 
   lastConversations(appid, userid, archived, callback) {
-    winston.debug("DB. app: "+ appid+ " user: " + userid + " archived: "+ archived)
+    logger.debug("(ChatDB) DB. app: "+ appid+ " user: " + userid + " archived: "+ archived)
     this.db.collection(this.conversations_collection).find( { timelineOf: userid, app_id: appid, archived: archived } ).limit(200).sort( { timestamp: -1 } ).toArray(function(err, docs) {
       if (err) {
         if (callback) {
@@ -149,7 +146,7 @@ class ChatDB {
   }
 
   conversationDetail(appid, timelineOf, conversWith, archived, callback) {
-    winston.debug("DB. app: "+ appid+ " user: " + timelineOf + " conversWith: "+ conversWith);
+    logger.debug("(ChatDB) DB. app: "+ appid+ " user: " + timelineOf + " conversWith: "+ conversWith);
     this.db.collection(this.conversations_collection).find( { timelineOf: timelineOf, app_id: appid, conversWith: conversWith, archived: archived } ).limit(1).toArray(function(err, docs) {
       if (err) {
         if (callback) {
@@ -165,7 +162,7 @@ class ChatDB {
   }
 
   lastMessages(appid, userid, convid, sort, limit, callback) {
-    winston.debug("DB. app:", appid, "user:", userid, "convid", convid)
+    logger.debug("(ChatDB) DB. app:", appid, "user:", userid, "convid", convid)
     this.db.collection(this.messages_collection).find( { timelineOf: userid, app_id: appid, conversWith: convid } ).limit(limit).sort( { timestamp: sort } ).toArray(function(err, docs) {
       if (err) {
         if (callback) {
@@ -194,7 +191,7 @@ class ChatDB {
   }
 
   allInstancesOf(appid, userid, callback) {
-    winston.debug("DB. app:", appid, "user:", userid)
+    logger.debug("(ChatDB) DB. app:", appid, "user:", userid)
     this.db.collection(this.instances_collection).find( { user_id: userid, app_id: appid }).toArray( (err, docs) => {
       if (err) {
         if (callback) {

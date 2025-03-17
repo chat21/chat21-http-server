@@ -45,7 +45,7 @@ class Chat21Api {
     archiveConversation(app_id, user_id, convers_with, callback) {
         // NOTE! THIS ARRIVES DIRECTLY ON THE CLIENT! REFACTOR WITH SOME "OBSERVER.APPS....ARCHIVE" TOPIC
         let dest_topic = `apps.${app_id}.users.${user_id}.conversations.${convers_with}.archive`
-        logger.debug("archive dest_topic: " + dest_topic)
+        logger.debug("(Chat21Api) archive dest_topic: " + dest_topic)
         let patch = {
             action: 'archive'
         }
@@ -92,7 +92,7 @@ class Chat21Api {
         // 2. save group json in mongodb
         this.saveOrUpdateGroup(group, (err) => { // 2. save group json in mongodb
             if (err) {
-                logger.error("Error while saving 'create group':", err);
+                logger.error("(Chat21Api) Error while saving 'create group':", err);
                 callback(err);
             }
             else {
@@ -105,14 +105,12 @@ class Chat21Api {
                 //     else {
                 this.sendGroupWelcomeMessage(group, async (err) => {
                     if (err) {
-                        logger.error('An error occurred during group creation, sendGroupWelcomeMessage To Initial Members', err)
+                        logger.error('(Chat21Api) An error occurred during group creation, sendGroupWelcomeMessage To Initial Members', err)
                         callback(err);
                     }
                     else {
-                        // console.log("SENDING 'MEMBER_JOINED_GROUP' FOR EACH MEMBER TO EACH MEMBER...", group);
                         const appid = group.appId
                         for (let [member_id, value] of Object.entries(group.members)) {
-                            // console.log("Sending: '" + member_id + " added to group on creation', to the group: " + group.uid);
                             const joined_member = await this.getContact(member_id);
                             const message = {
                                 type: "text",
@@ -137,13 +135,12 @@ class Chat21Api {
                                     }
                                 }
                             }
-                            // console.log("Member joined group message:", JSON.stringify(message))
                             this.sendMessageRaw(
                                 appid,
                                 message,
                                 (err) => {
                                     if (err) {
-                                        logger.error("Error delivering message to members for 'added to group on creation'", message);
+                                        logger.error("(Chat21Api) Error delivering message to members for 'added to group on creation'", message);
                                         return
                                     }
                                     else {
@@ -163,16 +160,16 @@ class Chat21Api {
 
     deliverGroupAdded(group, callback) {
         const app_id = group.appId
-        logger.debug("group IS", group)
-        logger.debug("APP_ID IS", app_id)
+        logger.debug("(Chat21Api) group IS", group)
+        logger.debug("(Chat21Api) APP_ID IS", app_id)
         for (let [key, value] of Object.entries(group.members)) {
             const member_id = key
             const added_group_topic = `apps.${app_id}.users.${member_id}.groups.${group.uid}.clientadded`
-            logger.debug("added_group_topic:", added_group_topic)
+            logger.debug("(Chat21Api) added_group_topic:", added_group_topic)
             const payload = JSON.stringify(group)
             this.publish(added_group_topic, Buffer.from(payload), function (err, msg) {
                 if (err) {
-                    logger.error("error publish deliverGroupAdded", err);
+                    logger.error("(Chat21Api) error publish deliverGroupAdded", err);
                     if (callback) {
                         callback(err);
                     }
@@ -217,13 +214,13 @@ class Chat21Api {
             group_created_message,
             (err) => {
                 if (err) {
-                    logger.error("Error delivering message:", group_created_message)
+                    logger.error("(Chat21Api) Error delivering message:", group_created_message)
                     if (callback) {
                         callback(err)
                     }
                 }
                 else {
-                    logger.debug("MESSAGE 'GROUP_CREATED' SENT TO: " + group.uid)
+                    logger.debug("(Chat21Api) MESSAGE 'GROUP_CREATED' SENT TO: " + group.uid)
                     if (callback) {
                         callback(null)
                     }
@@ -236,7 +233,7 @@ class Chat21Api {
     saveOrUpdateGroup(group, callback) {
         this.chatdb.saveOrUpdateGroup(group, function (err, doc) {
             if (err) {
-                logger.error("Error saving group:", err);
+                logger.error("(Chat21Api) Error saving group:", err);
                 callback(err);
                 return
             }
@@ -247,12 +244,12 @@ class Chat21Api {
     }
 
     async addMemberToGroupAndNotifyUpdate(user, joined_member_id, group_id, callback) {
-        logger.debug("addMemberToGroupAndNotifyUpdate()");
+        logger.debug("(Chat21Api) addMemberToGroupAndNotifyUpdate()");
         const joined_member = await this.getContact(joined_member_id);
         this.chatdb.getGroup(group_id, (err, group) => {
-            logger.debug("found group", group)
+            logger.debug("(Chat21Api) found group", group)
             if (err || !group) {
-                logger.error("group found? with err", err)
+                logger.error("(Chat21Api) group found? with err", err)
                 const reply = {
                     success: false,
                     err: (err && err.message()) ? err.message() : "Not found",
@@ -265,15 +262,15 @@ class Chat21Api {
             }
             else {
                 //group.appId = app_id;
-                logger.debug("actual group members", group.members)
-                logger.debug("actual group owner", group.owner)
-                logger.debug("group.appId", group.appId);
+                logger.debug("(Chat21Api) actual group members", group.members)
+                logger.debug("(Chat21Api) actual group owner", group.owner)
+                logger.debug("(Chat21Api) group.appId", group.appId);
                 const im_owner = (group.owner === user.uid)
                 const im_admin = user.roles.admin
-                logger.debug("im_owner: " + im_owner)
-                logger.debug("im_admin: " + im_admin)
+                logger.debug("(Chat21Api) im_owner: " + im_owner)
+                logger.debug("(Chat21Api) im_admin: " + im_admin)
                 if (im_admin || im_owner) {
-                    logger.debug("adding member", joined_member_id)
+                    logger.debug("(Chat21Api) adding member", joined_member_id)
                     if (group.members[joined_member_id]) {
                         const reply = {
                             success: false,
@@ -287,11 +284,11 @@ class Chat21Api {
                     }
                     // else
                     group.members[joined_member_id] = 1
-                    logger.debug("new members:", group.members)
+                    logger.debug("(Chat21Api) new members:", group.members)
                     this.chatdb.joinGroup(group_id, joined_member_id, (err) => {
-                        logger.log("Member", joined_member_id, "joined group");
+                        logger.log("(Chat21Api) Member", joined_member_id, "joined group");
                         if (err) {
-                            logger.error("An error occurred:", err)
+                            logger.error("(Chat21Api) An error occurred:", err)
                             const reply = {
                                 success: false,
                                 err: err.message() ? err.message() : "Error joining group",
@@ -316,43 +313,9 @@ class Chat21Api {
                             }
 
 
-                            // logger.log("qiooooooo4444444452222333333")
-                            // let message = {
-                            //     type: "text",
-                            //     text: joined_member_id + " added to group",
-                            //     timestamp: Date.now(),
-                            //     channel_type: "group",
-                            //     sender_fullname: "System",
-                            //     sender: "system",
-                            //     recipient_fullname: group.name,
-                            //     recipient: group.uid,
-                            //     attributes: {
-                            //         subtype: "info",
-                            //         updateconversation: true,
-                            //         messagelabel: message_label
-                            //     }
-                            // }
-                            // logger.log("qiooooooo55555")
-                            // logger.log("Member joined group message:", message);
-                            // this.sendMessageRaw(
-                            //     group.appId,
-                            //     message,
-                            //     (err) => {
-                            //         if (err) {
-                            //             logger.error("Error delivering message (addMemberToGroupAndNotifyUpdate), message:", message);
-                            //             logger.error("Error delivering message (addMemberToGroupAndNotifyUpdate), error:", err);
-                            //             return;
-                            //         }
-                            //         else {
-                            //             logger.log("SENT MESSAGE TO: " + group.uid)
-                            //         }
-                            //     }
-                            // );
-
-
-                            logger.debug("group updated with new joined member.")
+                            logger.debug("(Chat21Api) group updated with new joined member.")
                             this.notifyGroupUpdate(group, group.members, notification, (err) => {
-                                logger.log("PUBLISHED 'UPDATE GROUP'")
+                                logger.log("(Chat21Api) PUBLISHED 'UPDATE GROUP'")
                                 if (err) {
                                     if (callback) {
                                         callback(
@@ -372,7 +335,7 @@ class Chat21Api {
                                             null,
                                             group
                                         )
-                                        logger.log("GROUP IS", group)
+                                        logger.log("(Chat21Api) GROUP IS", group)
                                     }
                                 }
                             });
@@ -398,7 +361,7 @@ class Chat21Api {
      */
     notifyGroupUpdate(group, users_to_be_notified, notification, callback) {
         var update_group_topic = `apps.observer.${group.appId}.groups.update`
-        logger.debug("updating group to " + update_group_topic);
+        logger.debug("(Chat21Api) updating group to " + update_group_topic);
         if (notification) {
             group.notification = notification;
         }
@@ -407,9 +370,9 @@ class Chat21Api {
             notify_to: users_to_be_notified //{...new_members, ...old_members }
         }
         const group_payload = JSON.stringify(data)
-        logger.debug("payload:", group_payload)
+        logger.debug("(Chat21Api) payload:", group_payload)
         this.publish(update_group_topic, Buffer.from(group_payload), (err) => {
-            logger.debug("PUBLISHED 'UPDATE GROUP' ON TOPIC: " + update_group_topic)
+            logger.debug("(Chat21Api) PUBLISHED 'UPDATE GROUP' ON TOPIC: " + update_group_topic)
             callback(err)
         })
     }
@@ -426,8 +389,8 @@ class Chat21Api {
      * @param {*} callback
      */
     joinGroupMessages(joined_member_id, group, message_label, callback) {
-        logger.log("JOINED NAME:", joined_member_id)
-        logger.debug("'system' sends 'added to group' to (group:" + group.uid + ") - members: " + JSON.stringify(group.members))
+        logger.log("(Chat21Api) JOINED NAME:", joined_member_id)
+        logger.debug("(Chat21Api) 'system' sends 'added to group' to (group:" + group.uid + ") - members: " + JSON.stringify(group.members))
         const appid = group.appId
         const now = Date.now()
 
@@ -453,20 +416,20 @@ class Chat21Api {
                 messagelabel: message_label
             }
         }
-        logger.debug("'system' sends 'added to group' message:" + JSON.stringify(message))
+        logger.debug("(Chat21Api) 'system' sends 'added to group' message:" + JSON.stringify(message))
         this.sendMessageRaw(
             appid,
             message,
             (err) => {
                 if (err) {
-                    logger.error("Error delivering message to joined member", err);
+                    logger.error("(Chat21Api) Error delivering message to joined member", err);
                     if (callback) {
                         callback(err)
                     }
                     return
                 }
                 else {
-                    logger.debug("Sent 'member joined group' message:",message, "to: " + group.uid);
+                    logger.debug("(Chat21Api) Sent 'member joined group' message:",message, "to: " + group.uid);
                     if (callback) {
                         callback(null);
                     }
@@ -475,31 +438,31 @@ class Chat21Api {
         );
         // 2. pubblish old group messages to the joined member (in the member/group-conversWith timeline)
         const group_id = group.uid;
-        logger.debug("last messages for appid, userid, convid", appid, group_id, group_id);
+        logger.debug("(Chat21Api) last messages for appid, userid, convid", appid, group_id, group_id);
         this.chatdb.lastMessages(appid, group_id, group_id, 1, 200, (err, messages) => {
-            logger.debug("lastMessages:", messages);
-            logger.debug("lastMessages stringify:", JSON.stringify(messages));
+            logger.debug("(Chat21Api) lastMessages:", messages);
+            logger.debug("(Chat21Api) lastMessages stringify:", JSON.stringify(messages));
             if (err) {
-                logger.error("lastMessages Error", err)
+                logger.error("(Chat21Api) lastMessages Error", err)
                 // if (callback) {
                 //     callback(err)
                 // }
             }
             else if (!messages) {
-                logger.debug("No messages in group: " + group_id)
+                logger.debug("(Chat21Api) No messages in group: " + group_id)
                 // if (callback) {
                 //     callback(null)
                 // }
             }
             else {
-                logger.debug("delivering group messages history to: " + joined_member_id)
+                logger.debug("(Chat21Api) delivering group messages history to: " + joined_member_id)
                 const inbox_of = joined_member_id
                 const convers_with_group = group_id
                 messages.forEach(message => {
                     // TODO: CHECK IF MESSAGE WAS ALREADY DELIVERED. (CLIENT? SERVER?)
                     message["__history"] = "true"
                     message.status = 150; // DELIVERED
-                    logger.debug("Delivering message: " + message.text)
+                    logger.debug("(Chat21Api) Delivering message: " + message.text)
 
                     // logger.debug("message",  message);
 
@@ -517,7 +480,7 @@ class Chat21Api {
                     // problema se messaggio non ha attributers... devi crearlo
                     this.deliverMessage(appid, message, inbox_of, convers_with_group, (err) => {
                         if (err) {
-                            logger.error("error delivering message to joined member", inbox_of)
+                            logger.error("(Chat21Api) error delivering message to joined member", inbox_of)
                             // if (callback) {
                             //     callback(err)
                             // }
@@ -525,7 +488,7 @@ class Chat21Api {
                         }
                         else {
                             // QUI NON ARRIVA IN LOCALE????
-                            logger.debug("DELIVERED MESSAGE TO: " + inbox_of + " __CONVERS_WITH__ " + convers_with_group)
+                            logger.debug("(Chat21Api) DELIVERED MESSAGE TO: " + inbox_of + " __CONVERS_WITH__ " + convers_with_group)
                         }
                     });
                 });
@@ -541,7 +504,7 @@ class Chat21Api {
         logger.debug("member: " + removed_member_id + " will leave group: " + group_id)
         this.chatdb.getGroup(group_id, (err, group) => {
             if (err || !group) {
-                logger.error("group found? with err", err)
+                logger.error("(Chat21Api) group found? with err", err)
                 const reply = {
                     success: false,
                     err: (err && err.message()) ? err.message() : "Not found",
@@ -552,23 +515,23 @@ class Chat21Api {
                 }
             }
             else {
-                logger.debug("group found.");
-                logger.debug("actual group members: " + JSON.stringify(group.members))
-                logger.debug("group owner: " + JSON.stringify(group.owner))
+                logger.debug("(Chat21Api) group found.");
+                logger.debug("(Chat21Api) actual group members: " + JSON.stringify(group.members))
+                logger.debug("(Chat21Api) group owner: " + JSON.stringify(group.owner))
                 const im_owner = (group.owner === user.uid)
                 const im_admin = user.roles.admin
                 const im_member = group.members[user.uid]
                 const member_exists = group.members[removed_member_id]
-                logger.debug("im_owner: " + im_owner)
-                logger.debug("im_admin: " + im_admin)
+                logger.debug("(Chat21Api) im_owner: " + im_owner)
+                logger.debug("(Chat21Api) im_admin: " + im_admin)
                 if ((im_admin || im_owner || im_member) && member_exists) {
                     let old_members = { ...group.members };
                     delete group.members[removed_member_id]
-                    logger.debug("old members: " + JSON.stringify(old_members))
-                    logger.debug("new members: " + JSON.stringify(group.members))
+                    logger.debug("(Chat21Api) old members: " + JSON.stringify(old_members))
+                    logger.debug("(Chat21Api) new members: " + JSON.stringify(group.members))
                     this.chatdb.saveOrUpdateGroup(group, (err) => {
                         if (err) {
-                            logger.error("An error occurred:", err)
+                            logger.error("(Chat21Api) An error occurred:", err)
                             const reply = {
                                 success: false,
                                 err: err,
@@ -579,8 +542,8 @@ class Chat21Api {
                             }
                             return
                         }
-                        logger.debug("....saved group with leaved member. " + JSON.stringify(group))
-                        logger.debug("... notify to old members " + old_members + " the new group")
+                        logger.debug("(Chat21Api) ....saved group with leaved member. " + JSON.stringify(group))
+                        logger.debug("(Chat21Api) ... notify to old members " + old_members + " the new group")
                         let message_label = {
                             key: "MEMBER_LEFT_GROUP",
                             parameters: {
@@ -627,14 +590,14 @@ class Chat21Api {
                                 message,
                                 (err) => {
                                     if (err) {
-                                        logger.error("Error delivering message to members for 'leave group'", inbox_of)
+                                        logger.error("(Chat21Api) Error delivering message to members for 'leave group'", inbox_of)
                                         if (callback) {
                                             callback(err)
                                         }
                                         return;
                                     }
                                     else {
-                                        logger.debug("SENT MESSAGE TO: " + group.uid)
+                                        logger.debug("(Chat21Api) SENT MESSAGE TO: " + group.uid)
                                         callback(null);
                                     }
                                 }
@@ -711,9 +674,9 @@ class Chat21Api {
         const deliver_message_topic = `apps.observer.${appid}.users.${inbox_of}.messages.${convers_with}.delivered`
         const message_payload = JSON.stringify(message)
         this.publish(deliver_message_topic, Buffer.from(message_payload), function (err) {
-            logger.debug("PUBLISH: DELIVER MESSAGE TO TOPIC: " + deliver_message_topic)
+            logger.debug("(Chat21Api) PUBLISH: DELIVER MESSAGE TO TOPIC: " + deliver_message_topic)
             if (err) {
-                logger.error("error delivering message to joined member on topic", deliver_message_topic)
+                logger.error("(Chat21Api) error delivering message to joined member on topic", deliver_message_topic)
                 if (callback) {
                     callback(err)
                 }
@@ -755,19 +718,19 @@ class Chat21Api {
         if (timestamp) {
             outgoing_message.timestamp = timestamp
         }
-        logger.debug("outgoing_message: " + JSON.stringify(outgoing_message))
+        logger.debug("(Chat21Api) outgoing_message: " + JSON.stringify(outgoing_message))
         let dest_topic = `apps.${appid}.outgoing.users.${sender}.messages.${recipient}.outgoing`
         const message_payload = JSON.stringify(outgoing_message)
         this.publish(dest_topic, Buffer.from(message_payload), function (err) {
-            logger.debug("PUBLISHED: SENDING MESSAGE TO TOPIC: " + dest_topic)
+            logger.debug("(Chat21Api) PUBLISHED: SENDING MESSAGE TO TOPIC: " + dest_topic)
             if (err) {
-                logger.error("error sending message On topic: " + dest_topic, err)
+                logger.error("(Chat21Api) error sending message On topic: " + dest_topic, err)
                 if (callback) {
                     callback(err)
                     return
                 }
             }
-            logger.verbose("Message Sent to queue: " + JSON.stringify(outgoing_message) + " to " + dest_topic);
+            logger.verbose("(Chat21Api) Message Sent to queue: " + JSON.stringify(outgoing_message) + " to " + dest_topic);
             if (callback) {
                 callback(null);
             }
@@ -808,20 +771,20 @@ class Chat21Api {
         //   if (timestamp) {
         //     outgoing_message.timestamp = timestamp
         //   }
-        logger.debug("outgoing_message (sendMessageRaw): " + JSON.stringify(outgoing_message))
+        logger.debug("(Chat21Api) outgoing_message (sendMessageRaw): " + JSON.stringify(outgoing_message))
         let dest_topic = `apps.${appid}.outgoing.users.${outgoing_message.sender}.messages.${outgoing_message.recipient}.outgoing`
-        logger.debug("dest_topic (sendMessageRaw): " + dest_topic)
+        logger.debug("(Chat21Api) dest_topic (sendMessageRaw): " + dest_topic)
         const message_payload = JSON.stringify(outgoing_message)
         this.publish(dest_topic, Buffer.from(message_payload), (err) => {
-            logger.debug("PUBLISHED: SENDING RAW MESSAGE TO TOPIC: " + dest_topic)
+            logger.debug("(Chat21Api) PUBLISHED: SENDING RAW MESSAGE TO TOPIC: " + dest_topic)
             if (err) {
-                logger.error("Error sending raw message on topic: " + dest_topic, err)
+                logger.error("(Chat21Api) Error sending raw message on topic: " + dest_topic, err)
                 if (callback) {
                     callback(err)
                 }
             }
             else {
-                logger.debug("Message sent to queue: " + JSON.stringify(outgoing_message) + " to " + dest_topic);
+                logger.debug("(Chat21Api) Message sent to queue: " + JSON.stringify(outgoing_message) + " to " + dest_topic);
                 if (callback) {
                     callback(null);
                 }
@@ -830,11 +793,11 @@ class Chat21Api {
     }
 
     setGroupMembers(user, new_members, group_id, callback) {
-        logger.log("setGroupMembers user:", user, " members:", new_members, " group_id:", group_id)
+        logger.log("(Chat21Api) setGroupMembers user:", user, " members:", new_members, " group_id:", group_id)
         this.chatdb.getGroup(group_id, (err, group) => {
-            logger.log("Got group:", group)
+            logger.log("(Chat21Api) Got group:", group)
             if (err || !group) {
-                logger.error("group found? with err", err)
+                logger.error("(Chat21Api) group found? with err", err)
                 callback({ err: { message: "Not found" } })
                 return
             }
@@ -850,17 +813,17 @@ class Chat21Api {
 
             let added_members = {}
             for (const [key, value] of Object.entries(new_members)) {
-                logger.log(`${key}: ${value}`);
+                logger.log(`(Chat21Api) ${key}: ${value}`);
                 if (original_members[key]) {
-                    logger.log("member alredy present", key)
+                    logger.log("(Chat21Api) member alredy present", key)
                 }
                 else {
                     added_members[key] = 1
                 }
             }
-            logger.log("added_members:", added_members);
+            logger.log("(Chat21Api) added_members:", added_members);
             if (Object.keys(added_members).length == 0) {
-                logger.debug("Same members in group, skipping setGroupMembers()");
+                logger.debug("(Chat21Api) Same members in group, skipping setGroupMembers()");
                 if (callback) {
                     callback({ err: { message: "Same members in group, skipping setGroupMembers()" } })
                 }
@@ -871,7 +834,7 @@ class Chat21Api {
             group.updatedOn = now;
             this.chatdb.saveOrUpdateGroup(group, (err) => {
                 if (err) {
-                    logger.error("An error occurred:", err)
+                    logger.error("(Chat21Api) An error occurred:", err)
                     const reply = {
                         success: false,
                         err: err.message() ? err.message() : "Error saving group"
@@ -894,7 +857,7 @@ class Chat21Api {
                 // };
                 this.notifyGroupUpdate(group, original_members, null, async (err) => { // TO ORIGINAL MEMBERS
                     if (err) {
-                        logger.error("notifyGroupUpdate Error", err);
+                        logger.error("(Chat21Api) notifyGroupUpdate Error", err);
                         if (callback) {
                             callback(err);
                         }
@@ -902,9 +865,9 @@ class Chat21Api {
                     }
                     callback(null);
                     // 4. join added members
-                    logger.log("*****added members", added_members)
+                    logger.log("(Chat21Api) *****added members", added_members)
                     for (let [member_id, value] of Object.entries(added_members)) {
-                        logger.debug(">>>>> JOINING MEMBER: " + member_id)
+                        logger.debug("(Chat21Api) >>>>> JOINING MEMBER: " + member_id)
                         const joined_member = await this.getContact(member_id);
                         const messagelabel = {
                             key: "MEMBER_JOINED_GROUP",
@@ -916,7 +879,7 @@ class Chat21Api {
                             }
                         }
                         this.joinGroupMessages(member_id, group, messagelabel, function (reply) {
-                            logger.debug("member " + member_id + " invited on group " + group_id + " result " + reply)
+                            logger.debug("(Chat21Api) member " + member_id + " invited on group " + group_id + " result " + reply)
                         })
                     }
                 })
@@ -927,7 +890,7 @@ class Chat21Api {
     updateGroupData(user, group_name, group_id, callback) {
         this.chatdb.getGroup(group_id, (err, group) => {
             if (err || !group) {
-                logger.error("group found? with err", err)
+                logger.error("(Chat21Api) group found? with err", err)
                 callback({ err: { message: "Not found" } })
                 return
             }
@@ -943,7 +906,7 @@ class Chat21Api {
             group.updatedOn = now;
             this.chatdb.saveOrUpdateGroup(group, (err) => {
                 if (err) {
-                    logger.error("An error occurred:", err)
+                    logger.error("(Chat21Api) An error occurred:", err)
                     const reply = {
                         success: false,
                         err: err.message() ? err.message() : "Error saving group"
@@ -951,7 +914,7 @@ class Chat21Api {
                     callback(reply)
                     return
                 }
-                logger.debug("....saved group with no member: " + JSON.stringify(group))
+                logger.debug("(Chat21Api) ....saved group with no member: " + JSON.stringify(group))
                 let notification = {
                     messagelabel: {
                         key: "DATA_UPDATED_GROUP",
@@ -974,7 +937,7 @@ class Chat21Api {
     updateGroupAttributes(user, group_attributes, group_id, callback) {
         this.chatdb.getGroup(group_id, (err, group) => {
             if (err || !group) {
-                logger.error("group found? with err", err)
+                logger.error("(Chat21Api) group found? with err", err)
                 callback({ err: { message: "Not found" } })
                 return
             }
@@ -990,7 +953,7 @@ class Chat21Api {
             group.updatedOn = now;
             this.chatdb.saveOrUpdateGroup(group, (err) => {
                 if (err) {
-                    logger.error("An error occurred:", err)
+                    logger.error("(Chat21Api) An error occurred:", err)
                     const reply = {
                         success: false,
                         err: err.message() ? err.message() : "Error saving group"
@@ -1030,9 +993,9 @@ class Chat21Api {
     // }
 
     async getContact(joined_member_id) {
-        logger.debug('getting joned member name by joined_member_id:', joined_member_id);
+        logger.debug('(Chat21Api) getting joned member name by joined_member_id:', joined_member_id);
         let joined_member = await this.contacts.getContact(joined_member_id);
-        logger.debug('joined member:', JSON.stringify(joined_member));
+        logger.debug('(Chat21Api) joined member:', JSON.stringify(joined_member));
         if (!joined_member) {
             joined_member = {
                 firstname: "",
@@ -1064,16 +1027,16 @@ class Chat21Api {
         } else {
             autoRestart = false;
         }
-        logger.info("autoRestart: " + autoRestart);
+        logger.info("(Chat21Api) autoRestart: " + autoRestart);
 
 
         // logger.info("Connecting to RabbitMQ: " + process.env.RABBITMQ_URI)
         //amqp.connect(process.env.RABBITMQ_URI, (err, conn) => {
         amqp.connect(this.rabbitmq_uri, (err, conn) => {
             if (err) {
-                logger.error("[AMQP]", err);
+                logger.error("(Chat21Api) [AMQP]", err);
                 if (autoRestart) {
-                    logger.error("[AMQP] reconnecting");
+                    logger.log("(Chat21Api) [AMQP] reconnecting");
                     return setTimeout(() => { that.startMQ(resolve, reject) }, 1000);
                 } else {
                     process.exit(1);
@@ -1081,14 +1044,14 @@ class Chat21Api {
             }
             conn.on("error", (err) => {
                 if (err.message !== "Connection closing") {
-                    logger.error("[AMQP] conn error:", err);
+                    logger.error("(Chat21Api) [AMQP] conn error:", err);
                     return reject(err);
                 }
             });
             conn.on("close", () => {
-                logger.error("[AMQP] close");
+                logger.error("(Chat21Api) [AMQP] close");
                 if (autoRestart) {
-                    logger.error("[AMQP] reconnecting");
+                    logger.log("[AMQP] reconnecting");
                     return setTimeout(() => { that.startMQ(resolve, reject) }, 1000);
                 } else {
                     process.exit(1);
@@ -1117,10 +1080,10 @@ class Chat21Api {
             that.amqpConn.createConfirmChannel((err, ch) => {
                 if (that.closeOnErr(err)) return;
                 ch.on("error", function (err) {
-                    logger.error("[AMQP] channel error", err);
+                    logger.error("(Chat21Api) [AMQP] channel error", err);
                 });
                 ch.on("close", function () {
-                    logger.error("[AMQP] channel closed");
+                    logger.error("(Chat21Api) [AMQP] channel closed");
                 });
                 that.pubChannel = ch;
                 // logger.debug("this.offlinePubQueue.length",that.offlinePubQueue.length)
@@ -1146,7 +1109,7 @@ class Chat21Api {
 
     publish(routingKey, content, callback) {
         if (!this.pubChannel) {
-            logger.log("AMQP disabled. Can't publish.");
+            logger.log("(Chat21Api) AMQP disabled. Can't publish.");
             if (callback) {
                 callback(null);
             }
@@ -1155,9 +1118,9 @@ class Chat21Api {
         try {
             this.pubChannel.publish(this.exchange, routingKey, content, { persistent: false },
                 (err, ok) => {
-                    logger.log("published to.", routingKey);
+                    logger.log("(Chat21Api) published to.", routingKey);
                     if (err) {
-                        logger.error("[AMQP] publish error:", err);
+                        logger.error("(Chat21Api) [AMQP] publish error:", err);
                         this.offlinePubQueue.push([this.exchange, routingKey, content]);
                         this.pubChannel.connection.close();
                         if (callback) {
@@ -1165,7 +1128,7 @@ class Chat21Api {
                         }
                     }
                     else {
-                        logger.debug("published to: " + routingKey + " result " + ok);
+                        logger.debug("(Chat21Api) published to: " + routingKey + " result " + ok);
                         if (callback) {
                             callback(null)
                         }
@@ -1173,7 +1136,7 @@ class Chat21Api {
                 });
         }
         catch (err) {
-            logger.error("[AMQP] publish error.", err);
+            logger.error("(Chat21Api) [AMQP] publish error.", err);
             this.offlinePubQueue.push([this.exchange, routingKey, content]);
             if (callback) {
                 callback(err)
@@ -1183,7 +1146,7 @@ class Chat21Api {
 
     closeOnErr(err) {
         if (!err) return false;
-        logger.error("[AMQP] error", err);
+        logger.error("(Chat21Api) [AMQP] error", err);
         this.amqpConn.close();
         return true;
     }

@@ -11,14 +11,14 @@ const logger = require('../tiledesk-logger').logger;
 const MessageConstants = require("../models/messageConstants");
 
 if (process.env.PUSH_ENABLED == undefined || (process.env.PUSH_ENABLED && process.env.PUSH_ENABLED !== 'true')) {
-    logger.log("PUSH NOTIFICATIONS: OFF");
+    logger.log("(Chat21Push) PUSH NOTIFICATIONS: OFF");
 }
 else {
-    logger.log("PUSH NOTIFICATIONS: ON");
+    logger.log("(Chat21Push) PUSH NOTIFICATIONS: ON");
 
     if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
 
-        logger.log("project_id", process.env.FIREBASE_PROJECT_ID);
+        logger.log("(Chat21Push) project_id", process.env.FIREBASE_PROJECT_ID);
 
         let private_key = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
     
@@ -35,11 +35,11 @@ else {
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
         });
-        logger.log("after admin.apps.length:", admin.apps.length);
+        logger.log("(Chat21Push) after admin.apps.length:", admin.apps.length);
         // logger.log("admin.credential:", admin.app());
     }
     else {
-        logger.log("PUSH NOTIFICATION CONFIG ERROR. Please set all these .env props: FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL");
+        logger.log("(Chat21Push) PUSH NOTIFICATION CONFIG ERROR. Please set all these .env props: FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL");
     }
 }
 
@@ -64,7 +64,7 @@ class Chat21Push {
         callback) {
         this.chatdb.saveAppInstance(instance, (err) => {
             if (err) {
-                logger.error("Error while saving instance:", err);
+                logger.error("(Chat21Push) Error while saving instance:", err);
                 callback(err);
             }
             else {
@@ -74,26 +74,26 @@ class Chat21Push {
     }
 
     sendNotification(app_id, message, sender_id, recipient_id) {
-        logger.log("sending notification");
-        logger.log("app_id:", app_id);
-        logger.log("message:", message);
-        logger.log("sender_id:", sender_id);
-        logger.log("recipient_id:", recipient_id);
+        logger.log("(Chat21Push) sending notification");
+        logger.log("(Chat21Push) app_id:", app_id);
+        logger.log("(Chat21Push) message:", message);
+        logger.log("(Chat21Push) sender_id:", sender_id);
+        logger.log("(Chat21Push) recipient_id:", recipient_id);
 
-        logger.log("admin.credential:" + admin.credential)
+        logger.log("(Chat21Push) admin.credential:" + admin.credential)
         if (process.env.PUSH_ENABLED == undefined || (process.env.PUSH_ENABLED && process.env.PUSH_ENABLED === 'false')) {
-            logger.log("PUSH NOTIFICATIONS DISABLED");
+            logger.log("(Chat21Push) PUSH NOTIFICATIONS DISABLED");
             return
         }
         else if (admin.apps.length == 0) {
-            logger.log("PUSH NOTIFICATIONS ON, but Firebase admin app not configured!");
+            logger.log("(Chat21Push) PUSH NOTIFICATIONS ON, but Firebase admin app not configured!");
             return;
         }
 
         let forcenotification = false;
         if (message.attributes && message.attributes.forcenotification) {
             forcenotification = message.attributes.forcenotification;
-            logger.log('forcenotification', forcenotification);
+            logger.log('(Chat21Push) forcenotification', forcenotification);
         }
         // if (message.status != MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT) {
         //     logger.log('message.status != MessageConstants.CHAT_MESSAGE_STATUS_CODE.SENT');
@@ -101,40 +101,40 @@ class Chat21Push {
         // }
 
         if (recipient_id == "system") { //disabled to check push notification for first message
-            logger.log('do not send push notification if "system" is the sender');
+            logger.log('(Chat21Push) do not send push notification if "system" is the sender');
             return 0;
         }
 
         if (sender_id == recipient_id) {
-            logger.log('do not send push notification to the sender itself');
+            logger.log('(Chat21Push) do not send push notification to the sender itself');
             return 0;
         }
         if (forcenotification == false) {
             if (message.sender == "system"){
-                logger.log('do not send push notification for message with system as sender');
+                logger.log('(Chat21Push) do not send push notification for message with system as sender');
                 return 0;
             }
         
             if (message.attributes && message.attributes.sendnotification == false) {
-                logger.log('do not send push notification because sendnotification is false');
+                logger.log('(Chat21Push) do not send push notification because sendnotification is false');
                 return 0;
             }
         
             if (recipient_id == "general_group" ) {
-                logger.log('dont send push notification for mute recipient');
+                logger.log('(Chat21Push) dont send push notification for mute recipient');
                 //if sender is receiver, don't send notification
                 return 0;
             }
         } else {
-            logger.log('forcenotification is enabled');
+            logger.log('(Chat21Push) forcenotification is enabled');
         }
         const text = message.text;
 
-        logger.log('Getting allInstancesOf for recipient_id: '+recipient_id + ' app_id: '+ app_id);
+        logger.log('(Chat21Push) Getting allInstancesOf for recipient_id: '+recipient_id + ' app_id: '+ app_id);
         
         // const messageTimestamp = JSON.stringify(message.timestamp);
         this.chatdb.allInstancesOf(app_id, recipient_id, (err, instances) => {
-            logger.log('instances ', instances);
+            logger.log('(Chat21Push) instances ', instances);
             /*
             [
                 {
@@ -152,12 +152,12 @@ class Chat21Push {
             */
             // Check if there are any device tokens.
             if (!instances || (instances && instances.length == 0)) {
-                logger.log('There are no notification instances for:', recipient_id);
+                logger.log('(Chat21Push) There are no notification instances for:', recipient_id);
                 return
             }
             for (let i = 0; i < instances.length; i++) {
                 const instance_id = instances[i].instance_id;
-                logger.log("FCM instance_id:", instance_id)
+                logger.log("(Chat21Push) FCM instance_id:", instance_id)
                 var instance = instances[i];
                 const platform = instance.platform;
                 var clickAction = "NEW_MESSAGE";
@@ -226,15 +226,15 @@ class Chat21Push {
                         }
                     }
                 }
-                logger.log("Push payload:", JSON.stringify(payload));
+                logger.log("(Chat21Push) Push payload:", JSON.stringify(payload));
                 // admin.messaging().sendToDevice(instance_id, payload) // LEGACY
                 // info here: https://firebase.google.com/docs/cloud-messaging/send-message
                 admin.messaging().send(payload)
                 .then((response) => {
-                    logger.log("Push notification sent for message:", JSON.stringify(message));
-                    logger.log("  Token (aka instance_id):", instance_id);
-                    logger.log("  Platform:", platform);
-                    logger.log("  Response:", JSON.stringify(response));
+                    logger.log("(Chat21Push) Push notification sent for message:", JSON.stringify(message));
+                    logger.log("(Chat21Push)   Token (aka instance_id):", instance_id);
+                    logger.log("(Chat21Push)   Platform:", platform);
+                    logger.log("(Chat21Push)   Response:", JSON.stringify(response));
                     // response.results.forEach((result, index) => {
                     //     const error = result.error;
                     //     if (error) {
@@ -252,17 +252,17 @@ class Chat21Push {
                     // })
                 })
                 .catch((error) => {
-                    logger.log('Error sending push notification:', error);
+                    logger.log('(Chat21Push) Error sending push notification:', error);
                     if (error.errorInfo && error.errorInfo.code &
                         (error.errorInfo.code === 'messaging/invalid-registration-token' ||
                         error.errorInfo.code === 'messaging/invalid-argument' ||
                         error.errorInfo.code === 'messaging/registration-token-not-registered') ) {
                         this.chatdb.deleteInstanceByInstanceId(instance_id, (err) => {
                             if (err) {
-                                logger.error('Error while removing instance_id:', instance_id);    
+                                logger.error('(Chat21Push) Error while removing instance_id:', instance_id);    
                             }
                             else {
-                                logger.log('Remove instance_id:', instance_id);
+                                logger.log('(Chat21Push) Remove instance_id:', instance_id);
                             }
                         });
                     }

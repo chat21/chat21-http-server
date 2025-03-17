@@ -1,11 +1,12 @@
 const axios = require('axios'); // ONLY FOR TEMP PUSH WEBHOOK ENDPOINT
 
+let logger = require('./tiledesk-logger').logger;
+
 class Contacts {
 
     constructor(config) {
         this.CONTACTS_LOOKUP_ENDPOINT = config.CONTACTS_LOOKUP_ENDPOINT;
         this.tdcache = config.tdcache;
-        this.log = config.log;
     }
 
     /**
@@ -14,14 +15,10 @@ class Contacts {
      * @param {string} contact_id - The contact id.
     */
     async getContact(contact_id, callback) {
-        if (this.log) {
-            console.log("Getting contacts:", contact_id);
-            console.log("Getting contacts using CONTACTS_LOOKUP_ENDPOINT", this.CONTACTS_LOOKUP_ENDPOINT);
-        }
+        logger.log("(Contacts) Getting contacts:", contact_id);
+        logger.log("(Contacts) Getting contacts using CONTACTS_LOOKUP_ENDPOINT", this.CONTACTS_LOOKUP_ENDPOINT);
         if (!this.CONTACTS_LOOKUP_ENDPOINT) {
-            if (this.log) {
-                console.log("CONTACTS_LOOKUP_ENDPOINT is null");
-            }
+            logger.log("(Contacts) CONTACTS_LOOKUP_ENDPOINT is null");
             const empty_contact = {
                 firstname: "",
                 lastname: "",
@@ -39,9 +36,7 @@ class Contacts {
             try {
                 contact_string = await this.tdcache.get(contact_key);
                 if (contact_string) {
-                    if (this.log) {
-                        console.log("Got contact from redis cache:", contact_string);
-                    }
+                    logger.log("(Contacts) Got contact from redis cache:", contact_string);
                     const contact = JSON.parse(contact_string);
                     if (contact) {
                         contact.cached = true;
@@ -53,14 +48,13 @@ class Contacts {
                 }
             }
             catch (error) {
-                console.error("An error occurred getting redis:", contact_key);
+                logger.error("(Contacts) An error occurred getting redis:", contact_key);
             }
         }
         const URL = `${this.CONTACTS_LOOKUP_ENDPOINT}/${contact_id}`
-        if (this.log) {
-            console.log("Redis failed for:", contact_key);
-            console.log("Getting contact on URL:", URL);
-        }
+
+        logger.log("(Contacts) Redis failed for:", contact_key);
+        logger.log("(Contacts) Getting contact on URL:", URL);
         const HTTPREQUEST = {
             url: URL,
             headers: {
@@ -74,23 +68,17 @@ class Contacts {
             contact = await this.myrequest(HTTPREQUEST);
         }
         catch(error) {
-            if (this.log) {
-                console.error("User not found:", URL)
-            }
+            logger.error("(Contacts) User not found:", URL)
             return null;
         }
         if (contact) {
             const contact_key = "contacts:" + contact_id;
-            if (this.log) {
-                console.log("contact found:", contact);
-                console.log("contact key:", contact_key);
-            }
+            logger.log("(Contacts) contact found:", contact);
+            logger.log("(Contacts) contact key:", contact_key);
             const contact_string = JSON.stringify(contact);
             if (this.tdcache) {
-                if (this.log) {
-                    console.log("Caching contact as string:", contact_string);
-                }
-                this.tdcache.set(contact_key, contact_string, { EX: 120 });
+                logger.log("(Contacts) Caching contact as string:", contact_string);
+                await this.tdcache.set(contact_key, contact_string, { EX: 120 });
             }
         }
         return contact;
@@ -117,10 +105,8 @@ class Contacts {
 
     async myrequest(options, callback) {
         return new Promise( (resolve, reject) => {
-            if (this.log) {
-                console.log("API URL:", options.url);
-                console.log("** Options:", options);
-            }
+            logger.log("(Contacts) API URL:", options.url);
+            logger.log("(Contacts) ** Options:", options);
             axios(
             {
                 url: options.url,
@@ -130,10 +116,8 @@ class Contacts {
                 headers: options.headers
             })
             .then( (res) => {
-                if (this.log) {
-                    console.log("Response for url:", options.url);
-                    console.log("Response headers:\n", res.headers);
-                }
+                logger.log("(Contacts) Response for url:", options.url);
+                logger.log("(Contacts) Response headers:\n", res.headers);
                 if (res && res.status == 200 && res.data) {
                     if (callback) {
                         callback(null, res.data);

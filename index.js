@@ -69,7 +69,7 @@ app.use(function (req, res, next) {
 
     next();
   } else {
-    logger.error('Unauthorized.');
+    logger.error('(Chat21-http) Unauthorized.');
     return res.status(403).send({success: false, msg: 'Unauthorized.'});
   }
   
@@ -84,41 +84,10 @@ const { Chat21Client } = require('./mqttclient/chat21client.js');
 app.get("/test", (req, res) => {
 
   let TILEDESK_PROJECT_ID = "" || req.query.projectid;
-  // if (process.env && process.env.PERFORMANCE_TEST_TILEDESK_PROJECT_ID) {
-  //   TILEDESK_PROJECT_ID = process.env.PERFORMANCE_TEST_TILEDESK_PROJECT_ID
-  //     // console.log("TILEDESK_PROJECT_ID:", TILEDESK_PROJECT_ID);
-  // }
-  // else {
-  //     throw new Error(".env.PERFORMANCE_TEST_TILEDESK_PROJECT_ID is mandatory");
-  // }
-
-  // console.log("process.env.PERFORMANCE_TEST_MQTT_ENDPOINT:", process.env.PERFORMANCE_TEST_MQTT_ENDPOINT);
   let MQTT_ENDPOINT = "" || req.query.mqtt_endpoint;
-  // if (process.env && process.env.PERFORMANCE_TEST_MQTT_ENDPOINT) {
-  //   MQTT_ENDPOINT = process.env.PERFORMANCE_TEST_MQTT_ENDPOINT
-  //     // console.log("MQTT_ENDPOINT:", MQTT_ENDPOINT);
-  // }
-  // else {
-  //     throw new Error(".env.PERFORMANCE_TEST_MQTT_ENDPOINT is mandatory");
-  // }
-
   let API_ENDPOINT = "" || req.query.api_endpoint;
-  // if (process.env && process.env.PERFORMANCE_TEST_API_ENDPOINT) {
-  //   API_ENDPOINT = process.env.PERFORMANCE_TEST_API_ENDPOINT
-  //     // console.log("API_ENDPOINT:", API_ENDPOINT);
-  // }
-  // else {
-  //     throw new Error(".env.PERFORMANCE_TEST_API_ENDPOINT is mandatory");
-  // }
-
   let CHAT_API_ENDPOINT = "" || req.query.chatapi_endpoint;
-  // if (process.env && process.env.PERFORMANCE_TEST_CHAT_API_ENDPOINT) {
-  //   CHAT_API_ENDPOINT = process.env.PERFORMANCE_TEST_CHAT_API_ENDPOINT
-  //     // console.log("CHAT_API_ENDPOINT:", CHAT_API_ENDPOINT);
-  // }
-  // else {
-  //     throw new Error(".env.PERFORMANCE_TEST_CHAT_API_ENDPOINT is mandatory");
-  // }
+
 
   let config = {
       MQTT_ENDPOINT: MQTT_ENDPOINT,
@@ -135,9 +104,7 @@ app.get("/test", (req, res) => {
   };
 
 
-
-
-let chatClient1 = new Chat21Client(
+  let chatClient1 = new Chat21Client(
   {
       appId: config.APPID,
       MQTTendpoint: config.MQTT_ENDPOINT,
@@ -151,7 +118,7 @@ let chatClient1 = new Chat21Client(
           userdata = await createAnonymousUser(TILEDESK_PROJECT_ID, API_ENDPOINT);
       }
       catch(error) {
-          console.log("An error occurred during anonym auth:", error);
+          logger.log("(Chat21-http) An error occurred during anonym auth:", error);
           process.exit(0);
       }
       
@@ -161,14 +128,14 @@ let chatClient1 = new Chat21Client(
       let group_id;
       let group_name;
   
-      console.log("Message delay check.");
-      console.log("MQTT endpoint:", config.MQTT_ENDPOINT);
-      console.log("API endpoint:", config.CHAT_API_ENDPOINT);
-      console.log("Tiledesk Project Id:", config.TILEDESK_PROJECT_ID);
+      logger.log("(Chat21-http) Message delay check.");
+      logger.log("(Chat21-http) MQTT endpoint:", config.MQTT_ENDPOINT);
+      logger.log("(Chat21-http) API endpoint:", config.CHAT_API_ENDPOINT);
+      logger.log("(Chat21-http) Tiledesk Project Id:", config.TILEDESK_PROJECT_ID);
   
-      console.log("Connecting...")
+      logger.log("Connecting...")
       chatClient1.connect(user1.userid, user1.token, () => {
-          console.log("chatClient1 connected and subscribed.");
+          logger.log("(Chat21-http) chatClient1 connected and subscribed.");
           group_id = "support-group-" + "64690469599137001a6dc6f5-" + uuid().replace(/-+/g, "");
           group_name = "benchmarks group => " + group_id;
           send(group_id, group_name, chatClient1, config, user1, function(delay) {
@@ -187,42 +154,42 @@ let chatClient1 = new Chat21Client(
 
 
 async function send(group_id, group_name, chatClient, config, user, callback) {
-  console.log("\n\n***********************************************");
-  console.log("********* Single message delay script *********");
-  console.log("***********************************************\n\n");
+  logger.log("\n\n***********************************************");
+  logger.log("********* Single message delay script *********");
+  logger.log("***********************************************\n\n");
   let time_sent = Date.now();
   let handler = chatClient.onMessageAdded((message, topic) => {
-      console.log("> Incoming message [sender:" + message.sender_fullname + "]: " + message.text);
-      if (
-          message &&
-          message.text.startsWith(config.MESSAGE_PREFIX) &&
-          (message.sender_fullname !== "User 1" && message.sender_fullname !== "System") && // bot is the sender
-          message.recipient === group_id
-      ) {
-          console.log("> Incoming message (sender is the chatbot) used for computing ok.");
-          let text = message.text.trim();
-          let time_received = Date.now();
-          let delay = time_received - time_sent;
-          console.log("Total delay:" + delay + "ms");
+    logger.log("(Chat21-http) > Incoming message [sender:" + message.sender_fullname + "]: " + message.text);
+    if (
+        message &&
+        message.text.startsWith(config.MESSAGE_PREFIX) &&
+        (message.sender_fullname !== "User 1" && message.sender_fullname !== "System") && // bot is the sender
+        message.recipient === group_id
+    ) {
+      logger.log("(Chat21-http) > Incoming message (sender is the chatbot) used for computing ok.");
+      let text = message.text.trim();
+      let time_received = Date.now();
+      let delay = time_received - time_sent;
+      logger.log("(Chat21-http) Total delay:" + delay + "ms");
 
-          callback(delay);         
-      }
-      else {
-          console.log("Message not computed:", message.text);
-      }
+      callback(delay);         
+    }
+    else {
+      logger.log("(Chat21-http) Message not computed:", message.text);
+    }
   });
-  console.log("Sending test message...");
+  logger.log("(Chat21-http) Sending test message...");
   let recipient_id = group_id;
   let recipient_fullname = group_name;
   let message_UUID = uuid().replace(/-+/g, "");
   sendMessage(message_UUID, recipient_id, recipient_fullname, async (latency) => {
-      console.log("Sent ok:", message_UUID);
+      logger.log("(Chat21-http) Sent ok:", message_UUID);
   }, chatClient, config, user);
 }
 
 function sendMessage(message_UUID, recipient_id, recipient_fullname, callback, chatClient, config, user) {
   const sent_message = config.MESSAGE_PREFIX + "/"+ message_UUID;
-  console.log("Sending message with text:", sent_message);
+  logger.debug("(Chat21-http) Sending message with text:", sent_message);
   
   chatClient.sendMessage(
       sent_message,
@@ -235,16 +202,16 @@ function sendMessage(message_UUID, recipient_id, recipient_fullname, callback, c
       'group',
       (err, msg) => {
           if (err) {
-              console.error("Error send:", err);
+              logger.error("(Chat21-http) Error send:", err);
           }
-          console.log("Message Sent ok:", msg);
+          logger.log("(Chat21-http) Message Sent ok:", msg);
       }
   );
 }
 
 async function createAnonymousUser(tiledeskProjectId,API_ENDPOINT) {
   ANONYMOUS_TOKEN_URL = API_ENDPOINT + '/auth/signinAnonymously';
-  console.log("Getting ANONYMOUS_TOKEN_URL:", ANONYMOUS_TOKEN_URL);
+  logger.log("(Chat21-http) Getting ANONYMOUS_TOKEN_URL:", ANONYMOUS_TOKEN_URL);
   return new Promise((resolve, reject) => {
       let data = JSON.stringify({
           "id_project": tiledeskProjectId
@@ -259,10 +226,9 @@ async function createAnonymousUser(tiledeskProjectId,API_ENDPOINT) {
           data : data
       };
   
-      axios.request(axios_config)
-      .then((response) => {
-      console.log("Got Anonymous Token:", JSON.stringify(response.data.token));
-      CHAT21_TOKEN_URL = API_ENDPOINT + '/chat21/native/auth/createCustomToken';
+      axios.request(axios_config).then((response) => {
+        logger.log("(Chat21-http) Got Anonymous Token:", JSON.stringify(response.data.token));
+        CHAT21_TOKEN_URL = API_ENDPOINT + '/chat21/native/auth/createCustomToken';
           let config = {
               method: 'post',
               maxBodyLength: Infinity,
@@ -274,7 +240,6 @@ async function createAnonymousUser(tiledeskProjectId,API_ENDPOINT) {
   
           axios.request(config)
           .then((response) => {
-              // console.log(response);
 
               const mqtt_token = response.data.token;
               const chat21_userid = response.data.userid;
@@ -284,12 +249,12 @@ async function createAnonymousUser(tiledeskProjectId,API_ENDPOINT) {
               });
           })
           .catch((error) => {
-              console.log(error);
+              logger.error('(Chat21-http) ', error);
               reject(error);
           });
       })
       .catch((error) => {
-          console.log(error);
+          logger.error('(Chat21-http) ', error);
           reject(error)
       });
   });
@@ -301,16 +266,16 @@ app.get("/verify", (req, res) => {
 })
 
 app.get(BASEURL + "/:appid/:userid/conversations", (req, res) => {
-  logger.debug("HTTP: getting /:appid/:userid/conversations")
+  logger.debug("(Chat21-http) HTTP: getting /:appid/:userid/conversations")
   if (!authorize(req, res)) {
-    logger.debug("Unauthorized!")
+    logger.debug("(Chat21-http) Unauthorized!")
     return
   }
-  logger.debug("Go with conversations!")
+  logger.debug("(Chat21-http) Go with conversations!")
   conversations(req, false, function(err, docs) {
-    logger.debug("Got conversations.");
+    logger.debug("(Chat21-http) Got conversations.");
     if (err) {
-      logger.error("Error getting conversations", err);
+      logger.error("(Chat21-http) Error getting conversations", err);
       const reply = {
           success: false,
           err: err.message()
@@ -328,13 +293,13 @@ app.get(BASEURL + "/:appid/:userid/conversations", (req, res) => {
 })
 
 app.get(BASEURL + "/:appid/:userid/conversations/archived", (req, res) => {
-  logger.debug("HTTP: getting /:appid/:userid/archived_conversations")
+  logger.debug("(Chat21-http) HTTP: getting /:appid/:userid/archived_conversations")
   if (!authorize(req, res)) {
-    logger.debug("Unauthorized!")
+    logger.debug("(Chat21-http) Unauthorized!")
     return
   }
   conversations(req, true, function(err, docs) {
-    logger.debug("got archived conversations", docs, err)
+    logger.debug("(Chat21-http) got archived conversations", docs, err)
     if (err) {
       const reply = {
           success: false,
@@ -355,7 +320,7 @@ app.get(BASEURL + "/:appid/:userid/conversations/archived", (req, res) => {
 function authorize(req, res) {
   const appid = req.params.appid
   // const userid = req.params.userid
-  logger.debug("appId:", appid, "user:", JSON.stringify(req.user))
+  logger.debug("(Chat21-http) appId:", appid, "user:", JSON.stringify(req.user))
   if (!req.user || (req.user.appId !== appid)) { // (req.user.uid !== userid) || 
     res.status(401).end()
     return false
@@ -364,7 +329,7 @@ function authorize(req, res) {
 }
 
 app.get(BASEURL + "/:appid/:userid/archived_conversations", (req, res) => {
-  logger.debug("HTTP: GET /:appid/:userid/archived_conversations")
+  logger.debug("(Chat21-http) HTTP: GET /:appid/:userid/archived_conversations")
   if (!authorize(req, res)) {
     return
   }
@@ -387,7 +352,7 @@ app.get(BASEURL + "/:appid/:userid/archived_conversations", (req, res) => {
 })
 
 app.get(BASEURL + "/:appid/:userid/conversations/:conversWith", (req, res) => {
-  logger.debug("HTTP: GET /:appid/:userid/conversations/:conversWith");
+  logger.debug("(Chat21-http) HTTP: GET /:appid/:userid/conversations/:conversWith");
   if (!authorize(req, res)) {
     return
   }
@@ -410,7 +375,7 @@ app.get(BASEURL + "/:appid/:userid/conversations/:conversWith", (req, res) => {
 })
 
 app.get(BASEURL + "/:appid/:userid/archived_conversations/:conversWith", (req, res) => {
-  logger.debug("HTTP: GET /:appid/:userid/conversations/:conversWith");
+  logger.debug("(Chat21-http) HTTP: GET /:appid/:userid/conversations/:conversWith");
   if (!authorize(req, res)) {
     return
   }
@@ -433,7 +398,7 @@ app.get(BASEURL + "/:appid/:userid/archived_conversations/:conversWith", (req, r
 })
 
 function conversationDetail(req, archived, callback) {
-  // logger.debug("getting /:appid/:userid/archived_conversations")
+  // logger.debug("(Chat21-http) getting /:appid/:userid/archived_conversations")
   const appid = req.params.appid
   const userid = req.params.userid
   const conversWith = req.params.conversWith
@@ -443,7 +408,7 @@ function conversationDetail(req, archived, callback) {
 }
 
 function conversations(req, archived, callback) {
-  // logger.debug("getting /:appid/:userid/archived_conversations")
+  // logger.debug("(Chat21-http) getting /:appid/:userid/archived_conversations")
   const appid = req.params.appid
   const userid = req.params.userid
   chatdb.lastConversations(appid, userid, archived, function(err, docs) {
@@ -452,12 +417,12 @@ function conversations(req, archived, callback) {
 }
 
 app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) => {
-    logger.debug("HTTP: getting /:appid/:userid/messages")
+    logger.debug("(Chat21-http) HTTP: getting /:appid/:userid/messages")
     const appid = req.params.appid
     const userid = req.params.userid
     const convid = req.params.convid
     const jwt = decodejwt(req)
-    // logger.debug("app:", appid, "user:", userid, "convid:", convid, "token:", jwt)
+    // logger.debug("(Chat21-http) app:", appid, "user:", userid, "convid:", convid, "token:", jwt)
     if (jwt.sub !== userid || jwt.app_id !== appid) {
         res.status(401).end()
         return
@@ -475,7 +440,7 @@ app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) =
           success: true,
           result: messages
         }
-        // logger.debug("REPLY:", reply)
+        // logger.debug("(Chat21-http) REPLY:", reply)
         res.status(200).json(reply)
       }
     })
@@ -483,7 +448,7 @@ app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) =
 
 /** Delete (Archive) a conversation */
 app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
-  logger.debug('HTTP: delete: Conversation. req.params:', req.params, 'req.body:', req.body)
+  logger.debug('(Chat21-http) HTTP: delete: Conversation. req.params:', req.params, 'req.body:', req.body)
 
   if (!req.params.recipient_id) {
     res.status(405).send('recipient_id is not present!');
@@ -498,15 +463,15 @@ app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
   
   let user_id = req.user.uid;
   const im_admin = req.user.roles.admin
-  logger.debug("im_admin?", im_admin, "roles:", req.user.roles)
+  logger.debug("(Chat21-http) im_admin?", im_admin, "roles:", req.user.roles)
   if (req.body.user_id && im_admin) {
-    logger.debug('user_id from body:', req.body.user_id);
+    logger.debug('(Chat21-http) user_id from body:', req.body.user_id);
     user_id = req.body.user_id;
   }
 
-  // logger.debug('recipient_id:', recipient_id);
-  // logger.debug('app_id:', app_id);
-  logger.debug('user_id:', user_id);
+  // logger.debug('(Chat21-http) recipient_id:', recipient_id);
+  // logger.debug('(Chat21-http) app_id:', app_id);
+  logger.debug('(Chat21-http) user_id:', user_id);
 
   chatapi.archiveConversation(app_id, user_id, recipient_id, function(err) {
     if (err) {
@@ -518,7 +483,7 @@ app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
   })
 
   // chatApi.archiveConversation(user_id, recipient_id, app_id).then(function(result) {
-  //   logger.debug('result', result);
+  //   logger.debug('(Chat21-http) result', result);
   //   res.status(204).send({"success":true});
   // });
 });
@@ -529,31 +494,31 @@ app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
  * This endpoint supports CORS.
  */
 app.post(BASEURL + '/:app_id/messages', (req, res) => {
-  logger.debug('HTTP: Sends a message:', JSON.stringify(req.body));
+  logger.debug('(Chat21-http) HTTP: Sends a message:', JSON.stringify(req.body));
   if (!req.body.sender_fullname) {
-      logger.error('Sender Fullname is mandatory');
+      logger.error('(Chat21-http) Sender Fullname is mandatory');
       res.status(405).send('Sender Fullname is mandatory');
       return
   }
   else if (!req.body.recipient_id) {
-      logger.error('Recipient id is mandatory');
+      logger.error('(Chat21-http) Recipient id is mandatory');
       res.status(405).send('Recipient id is mandatory');
       return
   }
   else if (!req.body.recipient_fullname) {
-      logger.error('Recipient Fullname is mandatory');
+      logger.error('(Chat21-http) Recipient Fullname is mandatory');
       res.status(405).send('Recipient Fullname is mandatory');
       return
   }
   // else if (!req.body.text) {
-  //     logger.error('text is mandatory');
+  //     logger.error('(Chat21-http) text is mandatory');
   //     res.status(405).send('text is mandatory');
   //     return
   // }
-  logger.debug('validation ok');
+  logger.debug('(Chat21-http) validation ok');
 
   let sender_id = req.user.uid;
-  logger.debug('sender_id' + sender_id);
+  logger.debug('(Chat21-http) sender_id' + sender_id);
 
   im_admin = req.user.roles.admin // admin can force sender_id to someone different from current user
   if (im_admin && req.body.sender_id) {
@@ -569,17 +534,17 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
   let type = req.body.type;
   let metadata = req.body.metadata;
   let timestamp = req.body.timestamp;
-  logger.debug('sender_id:' + sender_id);
-  // logger.debug('sender_fullname', sender_fullname);
-  logger.debug('recipient_id:' + recipient_id);
-  // logger.debug('recipient_fullname', recipient_fullname);
-  logger.debug('text:'+ text);
-  // logger.debug('app_id', appid);
-  logger.debug('channel_type:'+ channel_type);
-  // logger.debug('attributes', attributes);
-  // logger.debug('type', type);
-  // logger.debug('metadata', metadata);
-  // logger.debug('timestamp', timestamp);
+  logger.debug('(Chat21-http) sender_id:' + sender_id);
+  // logger.debug('(Chat21-http) sender_fullname', sender_fullname);
+  logger.debug('(Chat21-http) recipient_id:' + recipient_id);
+  // logger.debug('(Chat21-http) recipient_fullname', recipient_fullname);
+  logger.debug('(Chat21-http) text:'+ text);
+  // logger.debug('(Chat21-http) app_id', appid);
+  logger.debug('(Chat21-http) channel_type:'+ channel_type);
+  // logger.debug('(Chat21-http) attributes', attributes);
+  // logger.debug('(Chat21-http) type', type);
+  // logger.debug('(Chat21-http) metadata', metadata);
+  // logger.debug('(Chat21-http) timestamp', timestamp);
   chatapi.sendMessage(
     appid, // mandatory
     type, // optional | text
@@ -594,7 +559,7 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
     metadata, // optional | null
     function(err) { // optional | null      
       if (err) {
-        logger.error("message sent with err", err)
+        logger.error("(Chat21-http) message sent with err", err)
         const reply = {
           success: false,
           err: (err && err.message()) ? err.message() : "Not found"
@@ -614,8 +579,8 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
 
 /** Create group */
 app.post(BASEURL + '/:appid/groups', (req, res) => {
-  logger.debug("HTTP: Create a group /:appid/groups")
-  logger.debug("appId:" + req.user.appId + ", user:" + req.user.uid)
+  logger.debug("(Chat21-http) HTTP: Create a group /:appid/groups")
+  logger.debug("(Chat21-http) appId:" + req.user.appId + ", user:" + req.user.uid)
   if (!req.user || !req.user.appId) {
     res.status(401).end()
     return
@@ -654,11 +619,11 @@ app.post(BASEURL + '/:appid/groups', (req, res) => {
 
     let appid = req.user.appId;
 
-    logger.debug('group_name' + group_name);
-    logger.debug('group_id'+ group_id);
-    logger.debug('group_owner' + group_owner);
-    logger.debug('group_members' + group_members);
-    logger.debug('app_id' + appid);
+    logger.debug('(Chat21-http) group_name' + group_name);
+    logger.debug('(Chat21-http) group_id'+ group_id);
+    logger.debug('(Chat21-http) group_owner' + group_owner);
+    logger.debug('(Chat21-http) group_members' + group_members);
+    logger.debug('(Chat21-http) app_id' + appid);
 
     const now = Date.now()
     var group = {};
@@ -672,7 +637,7 @@ app.post(BASEURL + '/:appid/groups', (req, res) => {
     if (group_attributes) {
         group.attributes = group_attributes;
     }
-    logger.debug("creating group " + JSON.stringify(group));
+    logger.debug("(Chat21-http) creating group " + JSON.stringify(group));
     chatapi.createGroup(group, function(err) {
       if (err) {
         res.status(500).send({"success":false, "err": err});
@@ -690,14 +655,14 @@ function newGroupId() {
 
 /** Get group data */
 app.get(BASEURL + '/:appid/groups/:group_id', async (req, res) => {
-  logger.debug("HTTP: Get group data. getting /:appid/groups/group_id")
+  logger.debug("(Chat21-http) HTTP: Get group data. getting /:appid/groups/group_id")
   if (!authorize(req, res)) {
-    logger.debug("Unauthorized!")
+    logger.debug("(Chat21-http) Unauthorized!")
     return
   }
   const group_id = req.params.group_id
   let cached_group = await groupFromCache(group_id);
-  console.log("cached group:", cached_group);
+  logger.log("(Chat21-http) cached group:", cached_group);
   if (cached_group) {
     im_member = cached_group.members[req.user.uid]
     im_admin = req.user.roles.admin
@@ -760,9 +725,9 @@ app.get(BASEURL + '/:appid/groups/:group_id', async (req, res) => {
 
 /** Join a group */
 app.post(BASEURL + '/:appid/groups/:group_id/members', async (req, res) => {
-  logger.debug('HTTP: Join a group. adds a member to a group', req.body, req.params);
+  logger.debug('(Chat21-http) HTTP: Join a group. adds a member to a group', req.body, req.params);
   if (!authorize(req, res)) {
-    logger.debug("Unauthorized")
+    logger.debug("(Chat21-http) Unauthorized")
     res.status(401).send('Unauthorized');
     return
   }
@@ -773,15 +738,15 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', async (req, res) => {
   const joined_member_id = req.body.member_id;
   const group_id = req.params.group_id;
   // const app_id = req.params.appid;
-  console.log('joined_member_id:', joined_member_id);
-  console.log('join group_id:', group_id);
+  logger.log('(Chat21-http) joined_member_id:', joined_member_id);
+  logger.log('(Chat21-http) join group_id:', group_id);
   // logger.debug('chatapi', chatapi);
   await resetGroupCache(group_id);
-  console.log("Got group to join to", group_id);
+  logger.log("(Chat21-http) Got group to join to", group_id);
   chatapi.addMemberToGroupAndNotifyUpdate(req.user, joined_member_id, group_id, async (err, group) => {
-    logger.debug("THE GROUP:", group)
+    logger.debug("(Chat21-http) THE GROUP:", group)
     if (err) {
-      logger.error("An error occurred while a member was joining the group", err)
+      logger.error("(Chat21-http) An error occurred while a member was joining the group", err)
       const reply = {
         success: false,
         err: (err) ? err : "An error occurred while a member was joining the group",
@@ -790,7 +755,7 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', async (req, res) => {
       res.status(reply.http_status).send(reply)
     }
     else if (group) {
-      logger.debug("Notifying to other members and copying old group messages to new user timeline...")
+      logger.debug("(Chat21-http) Notifying to other members and copying old group messages to new user timeline...")
       const joined_member = await chatapi.getContact(joined_member_id);
       let message_label = {
         key: "MEMBER_JOINED_GROUP",
@@ -802,9 +767,9 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', async (req, res) => {
         }
       };
       chatapi.joinGroupMessages(joined_member_id, group, message_label, function(err) {
-        logger.debug("member joined. Notified to other members and copied old group messages to new user timeline");
+        logger.debug("(Chat21-http) member joined. Notified to other members and copied old group messages to new user timeline");
         if (err) {
-          logger.error("An error occurred while joining member", err);
+          logger.error("(Chat21-http) An error occurred while joining member", err);
           const reply = {
             success: false,
             err: err,
@@ -823,7 +788,7 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', async (req, res) => {
         err: "Group not found",
         http_status: 405
       }
-      logger.error("Error encountered:", reply);
+      logger.error("(Chat21-http) Error encountered:", reply);
       res.status(reply.http_status).send(reply);
     }
   })
@@ -831,7 +796,7 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', async (req, res) => {
 
 /** Set members of a group */
 app.put(BASEURL + '/:app_id/groups/:group_id/members', async (req, res) => {
-  logger.debug('HTTP: Set members of a group with:', req.body);
+  logger.debug('(Chat21-http) HTTP: Set members of a group with:', req.body);
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
@@ -865,7 +830,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/members', async (req, res) => {
 /** Leave a group */
 app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', async (req, res) => {
   // app.delete('/groups/:group_id/members/:member_id', (req, res) => {
-  logger.debug('HTTP: Leave group');
+  logger.debug('(Chat21-http) HTTP: Leave group');
   if (!req.params.member_id) {
       res.status(405).send('member_id is mandatory');
       return
@@ -882,10 +847,10 @@ app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', async (req,
   let group_id = req.params.group_id;
   let app_id = req.params.app_id;
   const user = req.user
-  logger.debug('member_id:'+ member_id);
-  logger.debug('group_id:' + group_id);
-  logger.debug('app_id:' + app_id);
-  logger.debug('user:' + user.uid);
+  logger.debug('(Chat21-http) member_id:'+ member_id);
+  logger.debug('(Chat21-http) group_id:' + group_id);
+  logger.debug('(Chat21-http) app_id:' + app_id);
+  logger.debug('(Chat21-http) user:' + user.uid);
   await resetGroupCache(group_id);
   chatapi.leaveGroup(user, member_id, group_id, app_id, function(err) {
     if (err) {
@@ -899,7 +864,7 @@ app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', async (req,
 
 /** Update group (just group name) */
 app.put(BASEURL + '/:app_id/groups/:group_id', async (req, res) => {
-  logger.debug('HTTP: Update group (just group name)');
+  logger.debug('(Chat21-http) HTTP: Update group (just group name)');
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
@@ -928,7 +893,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id', async (req, res) => {
 
 /** Update group custom attributes */
 app.put(BASEURL + '/:app_id/groups/:group_id/attributes', async (req, res) => {
-  logger.debug('HTTP: Update group custom attributes for group:' + req.params.group_id + "body:" + JSON.stringify(req.body));
+  logger.debug('(Chat21-http) HTTP: Update group custom attributes for group:' + req.params.group_id + "body:" + JSON.stringify(req.body));
   if (!req.params.group_id) {
       res.status(405).send('group_id is mandatory');
       return
@@ -969,7 +934,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', async (req, res) => {
  * This endpoint supports CORS.
  */
  app.post(BASEURL + '/:app_id/:user_id/instances/:instance_id', (req, res) => {
-  logger.debug('HTTP: Adds a user app instance_id:', JSON.stringify(req.body));
+  logger.debug('(Chat21-http) HTTP: Adds a user app instance_id:', JSON.stringify(req.body));
 
   if (!req.params.user_id) {
     res.status(405).send('user_id is mandatory!');
@@ -981,8 +946,8 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', async (req, res) => {
 
   let app_id = req.params.app_id;
   let user_id = req.params.user_id;
-  logger.log("user_id", user_id)
-  logger.log("app_id", app_id)
+  logger.log("(Chat21-http) user_id", user_id)
+  logger.log("(Chat21-http) app_id", app_id)
   const jwt = decodejwt(req)
   if (jwt.sub !== user_id || jwt.app_id !== app_id) {
     res.status(401).send("Unauthorized.")
@@ -1021,7 +986,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', async (req, res) => {
     instance,
     function(err) {
       if (err) {
-        logger.error("instance saving error", err);
+        logger.error("(Chat21-http) instance saving error", err);
         const reply = {
           success: false,
           err: err
@@ -1040,7 +1005,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', async (req, res) => {
  * Admin role only
  */
  app.post(BASEURL + '/:app_id/notify', (req, res) => {
-  logger.debug('HTTP: Send push notification for a new message:', JSON.stringify(req.body));
+  logger.debug('(Chat21-http) HTTP: Send push notification for a new message:', JSON.stringify(req.body));
   
   if (!req.params.app_id) {
     res.status(405).send('app_id is mandatory!');
@@ -1104,7 +1069,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', async (req, res) => {
   if (event_type !== 'message-delivered') {
     return;
   }
-  logger.log("Processing new message-delivered event...");
+  logger.log("(Chat21-http) Processing new message-delivered event...");
   if (!req.params.app_id) {
     res.status(405).send('app_id is mandatory!');
     return;
@@ -1136,10 +1101,10 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', async (req, res) => {
 
   axios(axios_req)
     .then(function (response) {
-      logger.log("response.status:", response.status);
+      logger.log("(Chat21-http) response.status:", response.status);
     })
     .catch(function (error) {
-      logger.error("Axios call error:", error);
+      logger.error("(Chat21-http) Axios call error:", error);
     });
 
 });
@@ -1149,7 +1114,7 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', async (req, res) => {
 // ********************************************************************
 
 function decodejwt(req) {
-    logger.debug(req.headers)
+    logger.debug('(Chat21-http) ', req.headers)
     var token = null;
     if (req.headers["authorization"]) {
       token = req.headers["authorization"]
@@ -1166,12 +1131,12 @@ function decodejwt(req) {
     else {
       return null;
     }
-    logger.debug("token:", token)
+    logger.debug("(Chat21-http) token:", token)
     var decoded = null
     try {
         decoded = jwt.verify(token, jwtKey);
     } catch(err) {
-        logger.debug("err", err)
+        logger.debug("(Chat21-http) err", err)
     }
     return decoded
 }
@@ -1188,23 +1153,26 @@ async function saveGroupInCache(group, group_id) {
 }
 
 async function groupFromCache(group_id) {
-  logger.debug("groupFromCache() group_id:", group_id)
+  logger.debug("(Chat21-http) groupFromCache() group_id:", group_id)
   if (tdcache) {
     const group_key = "chat21:messages:groups:" + group_id;
-    logger.debug("get from cache by group key", group_key)
+    logger.debug("(Chat21-http) get from cache by group key", group_key)
     let group = null;
     try {
       const group_s = await tdcache.get(group_key);
-      console.log("group_s", group_s)
-      return JSON.parse(group_s);
+      if(group_s){
+        logger.log("(Chat21-http) group_s", group_s)
+        return JSON.parse(group_s);
+      }
+      return null
     }
     catch(err) {
-      console.error("Error getting from cache by group key", error);
+      logger.error("(Chat21-http) Error getting from cache by group key", error);
     }
     return group;
   }
   else {
-    logger.log("No Redis. Returning no group from cache.");
+    logger.log("(Chat21-http) No Redis. Returning no group from cache.");
     return null;
   }
 }
@@ -1213,11 +1181,11 @@ async function resetGroupCache(group_id) {
   if (tdcache) {
     try {
       const group_key = "chat21:messages:groups:" + group_id;
-      await tdcache.client.del(group_key);
-      logger.debug("removed group from cache:", group_key);
+      await tdcache.del(group_key);
+      logger.debug("(Chat21-http) removed group from cache:", group_key);
     }
     catch (error) {
-      console.error("An error occurred getting redis:", contact_key);
+      console.error("(Chat21-http) An error occurred getting redis:", contact_key);
     }
   }
 }
@@ -1239,10 +1207,10 @@ async function startAMQP(config) {
 
   // redis
   if (config.CACHE_ENABLED == undefined || (config.CACHE_ENABLED && config.CACHE_ENABLED !== 'true')) {
-    console.log("(Chat21-http) Cache (Redis) disabled.");
+    logger.info("(Chat21-http) Cache (Redis) disabled.");
   }
   else {
-    console.log("(Chat21-http) Cache (Redis) enabled.");
+    logger.info("(Chat21-http) Cache (Redis) enabled.");
     if (config && config.REDIS_HOST && config.REDIS_PORT) {
       tdcache = new TdCache({
         host: config.REDIS_HOST,
@@ -1280,26 +1248,16 @@ async function startAMQP(config) {
   db = client.db();
   chatdb = new ChatDB({database: db})
   chatpush = new Chat21Push({database: chatdb});
-  if (tdcache) {
-    logger.info("(Chat21-http) connecting to tdcache (Redis)...");
-    try {
-      await tdcache.connect();
-      logger.info("(Chat21-http) tdcache (Redis) connected.");
-    }
-    catch (error) {
-      tdcache = null;
-      console.error("(Chat21-http) tdcache (Redis) connection error:", error);
-    }
-    console.info("(Chat21-http) tdcache (Redis) connected.");
-  }
+  await connectRedis();
   let contacts_endpoint = process.env.CONTACTS_LOOKUP_ENDPOINT;
   if (config.CONTACTS_LOOKUP_ENDPOINT) {
     contacts_endpoint = config.CONTACTS_LOOKUP_ENDPOINT;
   }
+
+  
   const contacts = new Contacts({
     CONTACTS_LOOKUP_ENDPOINT: contacts_endpoint,
-    tdcache: tdcache,
-    log: false
+    tdcache: tdcache
   });
 
   chatapi = new Chat21Api(
@@ -1312,6 +1270,22 @@ async function startAMQP(config) {
   var amqpConnection = await chatapi.start();
   logger.info("(Chat21-http) [AMQP] connected.");
   logger.info("(Chat21-http) Server started.");
+}
+
+async function connectRedis() {
+  if (tdcache) {
+    try {
+      console.log("(Chat21-http) Connecting Redis...");
+      await tdcache.connect();
+      console.log("(Chat21-http) Redis connected.");
+    }
+    catch (error) {
+      tdcache = null;
+      console.error("(Chat21-http) Redis connection error:", error);
+      process.exit(1);
+    }
+  }
+  return;
 }
 
 // let rabbitmq_uri;
