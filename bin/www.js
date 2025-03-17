@@ -26,10 +26,10 @@ async function start() {
                   chat21HttpServer.startAMQP(
                         {
                               rabbitmq_uri: process.env.RABBITMQ_URI,
-                              REDIS_HOST: process.env.CHAT21HTTP_REDIS_HOST,
-                              REDIS_PORT: process.env.CHAT21HTTP_REDIS_PORT,
-                              REDIS_PASSWORD: process.env.CHAT21HTTP_REDIS_PASSWORD,
-                              CACHE_ENABLED: process.env.CHAT21HTTP_CACHE_ENABLED
+                              REDIS_HOST: process.env.REDIS_HOST,
+                              REDIS_PORT: process.env.REDIS_PORT,
+                              REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+                              CACHE_ENABLED: process.env.CACHE_ENABLED
                         }
                   );
             });
@@ -43,10 +43,10 @@ async function start() {
                   chat21HttpServer.startAMQP(
                         {
                               rabbitmq_uri: process.env.RABBITMQ_URI,
-                              REDIS_HOST: process.env.CHAT21HTTP_REDIS_HOST,
-                              REDIS_PORT: process.env.CHAT21HTTP_REDIS_PORT,
-                              REDIS_PASSWORD: process.env.CHAT21HTTP_REDIS_PASSWORD,
-                              CACHE_ENABLED: process.env.CHAT21HTTP_CACHE_ENABLED
+                              REDIS_HOST: process.env.REDIS_HOST,
+                              REDIS_PORT: process.env.REDIS_PORT,
+                              REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+                              CACHE_ENABLED: process.env.CACHE_ENABLED
                         }
                   );
             });
