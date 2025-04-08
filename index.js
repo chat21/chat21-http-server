@@ -1252,12 +1252,12 @@ async function startAMQP(config) {
     }
   }
   
-  let mongouri = null;
+  let MONGODB_URI = null;
   if (config && config.mongodb_uri) {
-    mongouri = config.mongodb_uri;
+    MONGODB_URI = config.mongodb_uri;
   }
   else if (process.env.MONGODB_URI) {
-    mongouri = process.env.MONGODB_URI;
+    MONGODB_URI = process.env.MONGODB_URI;
   }
   else {
     throw new Error('please configure process.env.MONGODB_URI or use parameter config.mongodb_uri option.');
@@ -1270,7 +1270,7 @@ async function startAMQP(config) {
   var db;
   var client;
   try {
-    client = await mongodb.MongoClient.connect(mongouri, { useNewUrlParser: true, useUnifiedTopology: true })
+    client = await mongodb.MongoClient.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   }
   catch(error) {
     logger.error("(Chat21-http) An error occurred during connection to MongoDB:", error);
