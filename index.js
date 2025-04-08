@@ -14,7 +14,7 @@ const { ChatDB } = require('./chatdb/index.js');
 const { Chat21Api } = require('./chat21Api/index.js');
 const { Chat21Push } = require('./sendpush/index.js');
 let logger = require('./tiledesk-logger').logger;
-console.log("Logger level:", logger.logLevel);
+console.log(`Logger level: ${logger.logLevel} (${process.env.LOG_LEVEL} )` );
 const axios = require('axios'); // ONLY FOR TEMP PUSH WEBHOOK ENDPOINT
 const https = require('https'); // ONLY FOR TEMP PUSH WEBHOOK ENDPOINT
 const { TdCache } = require('./TdCache.js');
