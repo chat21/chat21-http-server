@@ -1383,7 +1383,7 @@ async function resetGroupCache(group_id) {
       logger.debug("removed group from cache:", group_key);
     }
     catch (error) {
-      console.error("An error occurred getting redis:", contact_key);
+      console.error("An error occurred getting redis:", error);
     }
   }
 }
