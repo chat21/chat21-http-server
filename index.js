@@ -605,6 +605,137 @@ app.post(BASEURL + '/:app_id/messages', (req, res) => {
   )
 });
 
+/**
+ * Sends a message.
+ *
+ * This endpoint supports CORS.
+ */
+app.post(BASEURL + '/:app_id/messages/sync', (req, res) => {
+  logger.debug('HTTP: Sends a message:', JSON.stringify(req.body));
+  logger.debug('HTTP: Sends a message:', req.body);
+  if (!req.body.sender_fullname) {
+      logger.error('Sender Fullname is mandatory');
+      res.status(405).send('Sender Fullname is mandatory');
+      return
+  }
+  else if (!req.body.recipient_id) {
+      logger.error('Recipient id is mandatory');
+      res.status(405).send('Recipient id is mandatory');
+      return
+  }
+  else if (!req.body.recipient_fullname) {
+      logger.error('Recipient Fullname is mandatory');
+      res.status(405).send('Recipient Fullname is mandatory');
+      return
+  }
+  // else if (!req.body.text) {
+  //     logger.error('text is mandatory');
+  //     res.status(405).send('text is mandatory');
+  //     return
+  // }
+  logger.debug('validation ok');
+
+  let sender_id = req.user.uid;
+  logger.debug('sender_id' + sender_id);
+
+  im_admin = req.user.roles.admin // admin can force sender_id to someone different from current user
+  if (im_admin && req.body.sender_id) {
+    sender_id = req.body.sender_id;
+  }
+  let sender_fullname = req.body.sender_fullname;
+  let recipient_id = req.body.recipient_id;
+  let recipient_fullname = req.body.recipient_fullname;
+  let text = req.body.text;
+  let appid = req.params.app_id;
+  let channel_type = req.body.channel_type;
+  let attributes = req.body.attributes;
+  let type = req.body.type;
+  let metadata = req.body.metadata;
+  let timestamp = req.body.timestamp;
+  logger.debug('sender_id:' + sender_id);
+  // logger.debug('sender_fullname', sender_fullname);
+  logger.debug('recipient_id:' + recipient_id);
+  // logger.debug('recipient_fullname', recipient_fullname);
+  logger.debug('text:'+ text);
+  // logger.debug('app_id', appid);
+  logger.debug('channel_type:'+ channel_type);
+  logger.debug('attributes', attributes);
+  // logger.debug('type', type);
+  // logger.debug('metadata', metadata);
+  // logger.debug('timestamp', timestamp);
+
+
+  let MQTT_ENDPOINT =  req.query.mqtt_endpoint || "ws://localhost:15675/ws";
+  let CHAT_API_ENDPOINT = req.query.chatapi_endpoint || "http://localhost:8004/api";
+
+  let config = {
+      MQTT_ENDPOINT: MQTT_ENDPOINT,
+      CHAT_API_ENDPOINT: CHAT_API_ENDPOINT,
+      APPID: 'tilechat',
+  }
+
+  logger.debug('config', config);
+
+  let chatClient1 = new Chat21Client(
+  {
+      appId: config.APPID,
+      MQTTendpoint: config.MQTT_ENDPOINT,
+      APIendpoint: config.CHAT_API_ENDPOINT,
+      log: true
+  });
+
+  logger.debug("req.user",req.user);
+  let user_id = req.user.uid;
+  logger.debug("user_id",user_id);
+
+  let jwt_token = req.jwt_token;
+  logger.debug("jwt_token",jwt_token);
+
+  logger.debug("Connecting...")
+  chatClient1.connect(user_id, jwt_token, () => {
+    logger.debug("chatClient1 connected and subscribed.");
+      
+    let handler = chatClient1.onMessageAdded((message, topic) => {
+      logger.debug(">>> Incoming message [sender:" + message.sender_fullname + "]: ", message);            
+      res.status(200).send({success: true, message: message})
+    });
+
+
+    chatapi.sendMessage(
+      appid, // mandatory
+      type, // optional | text
+      text, // mandatory
+      timestamp, // optional | null (=>now)
+      channel_type, // optional | direct
+      sender_id, // mandatory
+      sender_fullname, // mandatory
+      recipient_id, // mandatory
+      recipient_fullname, // mandatory
+      attributes, // optional | null
+      metadata, // optional | null
+      function(err) { // optional | null      
+        if (err) {
+          logger.error("message sent with err", err)
+          const reply = {
+            success: false,
+            err: (err && err.message()) ? err.message() : "Not found"
+          }
+          res.status(404).send(reply)
+        }
+        
+      }
+    )    
+
+  });
+
+  
+});
+
+
+
+
+
+
 // *****************************************
 // **************** GROUPS *****************
 // *****************************************
@@ -1163,7 +1294,10 @@ function decodejwt(req) {
     else {
       return null;
     }
-    logger.debug("(Chat21-http) token:", token)
+    logger.debug("token:", token);
+
+    req["jwt_token"] = token;
+
     var decoded = null
     try {
         decoded = jwt.verify(token, jwtKey);

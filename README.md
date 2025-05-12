@@ -134,9 +134,46 @@ Where :
 
 
 ## Docker deploy
+```
 
 build -t chat21/chat21-http-server:latest .
 
 docker run  chat21/chat21-server:latest
 
 docker push chat21/chat21-http-server:latest
+```
+
+
+
+
+
+## Send a message (Synchronous version)
+
+== Send a Message ==
+
+```
+curl --location --request POST 'http://localhost:8004/api/APP_ID/messages/sync?mqtt_endpoint=ws://XYZ:15675/ws&chatapi_endpoint=http://XYZ:8004/api' \
+--header 'Authorization: JWT-TOKEN' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+ "sender_fullname": "SENDER FULLNAME",
+ "recipient_id": "RECIPIENT-UUID",
+ "recipient_fullname": "RECIPIENT FULLNAME",
+ "text": "hello",
+ "type": "text",
+ "channel_type": "direct"
+}'
+
+```
+
+Example: 
+```
+curl --location --request POST 'http://localhost:8004/api/tilechat/messages/sync?mqtt_endpoint=ws://localhost:15675/ws&chatapi_endpoint=http://localhost:8004/api' --header 'Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJmYmY2ODczMy1lZjRjLTQ2YmItOGU3ZS0wMWMyNWZkMDdhZGIiLCJzdWIiOiI1ZjA5OTgzZDIwZjc2YjAwMTlhZjcxOTAiLCJzY29wZSI6WyJyYWJiaXRtcS5yZWFkOiovKi9hcHBzLnRpbGVjaGF0LnVzZXJzLjVmMDk5ODNkMjBmNzZiMDAxOWFmNzE5MC4qIiwicmFiYml0bXEud3JpdGU6Ki8qL2FwcHMudGlsZWNoYXQudXNlcnMuNWYwOTk4M2QyMGY3NmIwMDE5YWY3MTkwLioiLCJyYWJiaXRtcS5jb25maWd1cmU6Ki8qLyoiXSwiY2xpZW50X2lkIjoiNWYwOTk4M2QyMGY3NmIwMDE5YWY3MTkwIiwiY2lkIjoiNWYwOTk4M2QyMGY3NmIwMDE5YWY3MTkwIiwiYXpwIjoiNWYwOTk4M2QyMGY3NmIwMDE5YWY3MTkwIiwidXNlcl9pZCI6IjVmMDk5ODNkMjBmNzZiMDAxOWFmNzE5MCIsImFwcF9pZCI6InRpbGVjaGF0IiwiaWF0IjoxNjE1Mjg2MzIxLCJleHAiOjE5MjYzMjYzMjEsImF1ZCI6WyJyYWJiaXRtcSIsIjVmMDk5ODNkMjBmNzZiMDAxOWFmNzE5MCJdLCJraWQiOiJ0aWxlZGVzay1rZXkiLCJ0aWxlZGVza19hcGlfcm9sZXMiOiJ1c2VyIn0.3Gt5_rT1lwmvV0wEoFYMedUFt25UIVbF-Qt3ufjPjQ4' --header 'Content-Type: application/json' --data-raw '{
+ "sender_fullname": "SENDER FULLNAME",
+ "recipient_id": "group-1744216774431",
+ "recipient_fullname": "RECIPIENT FULLNAME",
+ "text": "hello",
+ "type": "text",
+ "channel_type": "group"
+}'
+```
