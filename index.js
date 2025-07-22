@@ -349,6 +349,35 @@ app.delete(BASEURL + '/:app_id/:group_id/conversations/timelines', async (req, r
   });
 });
 
+/** Delete all messages from all timelines belonging to a group */
+app.delete(BASEURL + '/:app_id/:group_id/messages/timelines', async (req, res) => {
+  // app.delete('/groups/:group_id/members/:member_id', (req, res) => {
+
+  logger.debug('HTTP: Delete all messages from all timelines belonging to a group');
+  if (!req.params.group_id) {
+      res.status(405).send('group_id is mandatory');
+      return
+  }
+  else if (!req.params.app_id) {
+      res.status(405).send('app_id is mandatory');
+      return
+  }
+  let group_id = req.params.group_id;
+  let app_id = req.params.app_id;
+  const user = req.user
+  logger.debug('app_id:' + app_id);
+  logger.debug('group_id:' + group_id);
+  chatapi.removeAllMessagesForConversation(app_id, group_id, function(err) {
+    logger.debug('removeAllMessagesForConversation error?', err);
+    if (err) {
+      res.status(405).send(err)
+    }
+    else {
+      res.status(200).send({success: true})
+    }
+  });
+});
+
 function authorize(req, res) {
   const appid = req.params.appid
   // const userid = req.params.userid
@@ -477,6 +506,8 @@ app.get(BASEURL + "/:appid/:userid/conversations/:convid/messages", (req, res) =
       }
     })
 })
+
+
 
 /** Delete (Archive) a conversation */
 app.delete(BASEURL + '/:app_id/conversations/:recipient_id/', (req, res) => {
@@ -1441,9 +1472,9 @@ async function startAMQP(config) {
 async function connectRedis() {
   if (tdcache) {
     try {
-      console.log("(Chat21-http) Connecting Redis...");
+      logger.log("(Chat21-http) Connecting Redis...");
       await tdcache.connect();
-      console.log("(Chat21-http) Redis connected.");
+      logger.log("(Chat21-http) Redis connected.");
     }
     catch (error) {
       tdcache = null;

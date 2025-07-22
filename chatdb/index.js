@@ -225,16 +225,34 @@ class ChatDB {
   }
 
   deleteConversationsByConversWith(app_id, convers_with, callback) {
-    console.log("deleteConversationsByConversWith()");
+    logger.log("deleteConversationsByConversWith()");
     this.db.collection(this.conversations_collection).deleteMany({app_id: app_id, conversWith: convers_with}, function(err, obj) {
       if (err) {
-        console.error("deleteConversationsByConversWith() error", err);
+        logger.error("deleteConversationsByConversWith() error", err);
         if (callback) {
           callback(err, null);
         }
       }
       else {
-        console.log("deleteConversationsByConversWith() ok");
+        logger.log("deleteConversationsByConversWith() ok");
+        if (callback) {
+          callback(null, obj);
+        }
+      }
+   });
+  }
+
+  deleteMessagesByConversWith(app_id, convers_with, callback) {
+    logger.log("deleteMessagesByConversWith()", convers_with);
+    this.db.collection(this.messages_collection).deleteMany({app_id: app_id, conversWith: convers_with}, function(err, obj) {
+      if (err) {
+        console.error("deleteMessagesByConversWith() error", err);
+        if (callback) {
+          callback(err, null);
+        }
+      }
+      else {
+        logger.log("deleteMessagesByConversWith() ok");
         if (callback) {
           callback(null, obj);
         }
