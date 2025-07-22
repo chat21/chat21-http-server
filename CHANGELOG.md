@@ -4,6 +4,9 @@
 available on:
  ▶️ https://www.npmjs.com/package/@chat21/chat21-http-server
 
+## 0.2.40
+- added: api to delete all messages for a conversation for all timelines
+
 ## 0.2.38
 - added: LOG_LEVEL env var to manage logs
 - changed: CHAT21HTTP_REDIS_HOST, CHAT21HTTP_REDIS_PASSWORD, CHAT21HTTP_REDIS_PORT with CACHE_REDIS_HOST, CACHE_REDIS_PORT and CACHE_REDIS_PASSWORD
