@@ -844,9 +844,10 @@ class Chat21Api {
             }
             // 2. update members and update group
             const original_members = { ...group.members } // save old members to notify group update LATER
-            group.members = new_members;
+            
+            let added_members = {};
+            let removed_members = {};
 
-            let added_members = {}
             for (const [key, value] of Object.entries(new_members)) {
                 logger.log(`(Chat21Api) ${key}: ${value}`);
                 if (original_members[key]) {
@@ -856,8 +857,17 @@ class Chat21Api {
                     added_members[key] = 1
                 }
             }
+
+            for (const key of Object.keys(original_members)) {
+                if (!new_members[key]) {
+                    removed_members[key] = 1;
+                }
+            }
+            
             logger.log("(Chat21Api) added_members:", added_members);
-            if (Object.keys(added_members).length == 0) {
+            logger.log("(Chat21Api) removed_members:", removed_members);
+
+            if (Object.keys(added_members).length === 0 && Object.keys(removed_members).length === 0) {
                 logger.debug("(Chat21Api) Same members in group, skipping setGroupMembers()");
                 if (callback) {
                     callback({ err: { message: "Same members in group, skipping setGroupMembers()" } })
@@ -866,6 +876,7 @@ class Chat21Api {
             }
 
             const now = Date.now()
+            group.members = new_members;
             group.updatedOn = now;
             this.chatdb.saveOrUpdateGroup(group, (err) => {
                 if (err) {
