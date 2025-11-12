@@ -4,6 +4,9 @@
 available on:
  ▶️ https://www.npmjs.com/package/@chat21/chat21-http-server
 
+## 0.2.41
+- bug-fixed: fn setGroupMembers not update members correctly
+
 ## 0.2.40
 - added: api to delete all messages for a conversation for all timelines
 
