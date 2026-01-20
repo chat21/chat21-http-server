@@ -858,6 +858,7 @@ app.get(BASEURL + '/:appid/groups/:group_id', async (req, res) => {
   let cached_group = await groupFromCache(group_id);
   logger.log("(Chat21-http) cached group:", cached_group);
   if (cached_group) {
+    console.log("cached group found: ", cached_group);
     im_member = cached_group.members[req.user.uid]
     im_admin = req.user.roles.admin
     if (im_member || im_admin) {
@@ -887,6 +888,7 @@ app.get(BASEURL + '/:appid/groups/:group_id', async (req, res) => {
     }
     else if (group) {
       // logger.debug("group members", group.members)
+      console.log("group found: ", group);
       await saveGroupInCache(group, group_id);
       im_member = group.members[req.user.uid]
       im_admin = req.user.roles.admin
