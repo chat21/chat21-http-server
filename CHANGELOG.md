@@ -4,6 +4,9 @@
 available on:
  ▶️ https://www.npmjs.com/package/@chat21/chat21-http-server
 
+## 0.2.42
+- added: api to delete a group by uid
+
 ## 0.2.41
 - bug-fixed: fn setGroupMembers not update members correctly
 
