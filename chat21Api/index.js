@@ -1027,6 +1027,18 @@ class Chat21Api {
         })
     }
 
+    
+    async deleteGroup(user, uid, callback) {
+        this.chatdb.deleteGroup(uid, (err) => {
+            if (err) {
+                logger.error("(Chat21Api) error deleting group", err)
+                callback(err)
+                return
+            }
+            callback(null)
+        })
+    }
+
     // async getContact(joined_member_id) {
     //     logger.debug('getting joned member name by joined_member_id:', joined_member_id);
     //     const contacts = new Contacts({

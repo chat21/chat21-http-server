@@ -858,7 +858,7 @@ app.get(BASEURL + '/:appid/groups/:group_id', async (req, res) => {
   let cached_group = await groupFromCache(group_id);
   logger.log("(Chat21-http) cached group:", cached_group);
   if (cached_group) {
-    console.log("cached group found: ", cached_group);
+    logger.log("cached group found: ", cached_group);
     im_member = cached_group.members[req.user.uid]
     im_admin = req.user.roles.admin
     if (im_member || im_admin) {
@@ -1107,6 +1107,25 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', async (req, res) => {
   const user = req.user;
   await resetGroupCache(group_id);
   chatapi.updateGroupAttributes(user, attributes, group_id, function(err) {
+    if (err) {
+      res.status(405).send(err)
+    }
+    else {
+      res.status(200).send({success: true})
+    }
+  })
+});
+
+/** Delete a group */
+app.delete(BASEURL + '/:app_id/groups/:uid', async (req, res) => {
+  logger.debug('(Chat21-http) HTTP: Delete group');
+  if (!req.params.uid) {
+    res.status(405).send('uid is mandatory');
+    return
+  }
+  const uid = req.params.uid;
+  const user = req.user;
+  chatapi.deleteGroup(user, uid, function(err) {
     if (err) {
       res.status(405).send(err)
     }

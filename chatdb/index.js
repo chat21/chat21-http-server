@@ -127,6 +127,22 @@ class ChatDB {
     });
   }
 
+  deleteGroup(uid, callback) {
+    logger.debug("(ChatDB) deleting group...", uid)
+    this.db.collection(this.groups_collection).deleteOne({uid: uid}, function(err, doc) {
+      if (err) {
+        if (callback) {
+          callback(err, null)
+        }
+      }
+      else {
+        if (callback) {
+          callback(null, doc)
+        }
+      }
+    });
+  } 
+
 //   db.products.update(
 //     { _id: 100 },
 //     { $set: { "details.make": "zzz" } }
