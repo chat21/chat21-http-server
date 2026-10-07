@@ -4,7 +4,7 @@
 available on:
  ▶️ https://www.npmjs.com/package/@chat21/chat21-http-server
 
-## 0.2.42
+## 0.2.43
 - bug-fixed: setGroupMembers replaces the members atomically and computes added/removed members on the group returned by the update, instead of a group read earlier
 - bug-fixed: updateGroupData, updateGroupAttributes and leaveGroup saved the whole group read earlier, restoring the members changed meanwhile by a concurrent setGroupMembers. Now they update only their own fields
 - bug-fixed: the group cache is reset after the group is saved instead of before, so a concurrent read can't cache the old group
