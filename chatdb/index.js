@@ -104,6 +104,50 @@ class ChatDB {
     });
   }
 
+  /**
+   * Atomically replaces the group members.
+   * Calls back with the group as it was before the update (null if the group doesn't exist):
+   * the added/removed members must be computed on it, a group read earlier can be changed meanwhile.
+   * The written updatedOn is the group version used by the observer cache.
+   */
+  setGroupMembers(group_id, members, callback) {
+    const updatedOn = Date.now();
+    const update = { $set: { members: members, updatedOn: updatedOn } };
+    this.db.collection(this.groups_collection).findOneAndUpdate({ uid: group_id }, update, { returnDocument: 'before' }, function(err, result) {
+      if (callback) {
+        callback(err, result ? result.value : null, updatedOn);
+      }
+    });
+  }
+
+  /**
+   * Atomically removes a member from the group.
+   * Calls back with the group as it was before the update (null if the group doesn't exist) and the written updatedOn.
+   */
+  removeGroupMember(group_id, member_id, callback) {
+    const updatedOn = Date.now();
+    const update = { $unset: {}, $set: { updatedOn: updatedOn } };
+    update['$unset']["members." + member_id] = "";
+    this.db.collection(this.groups_collection).findOneAndUpdate({ uid: group_id }, update, { returnDocument: 'before' }, function(err, result) {
+      if (callback) {
+        callback(err, result ? result.value : null, updatedOn);
+      }
+    });
+  }
+
+  /**
+   * Sets only the given fields of the group, leaving the members untouched.
+   * Calls back with the updated group (null if the group doesn't exist).
+   */
+  updateGroupFields(group_id, fields, callback) {
+    const update = { $set: { ...fields, updatedOn: Date.now() } };
+    this.db.collection(this.groups_collection).findOneAndUpdate({ uid: group_id }, update, { returnDocument: 'after' }, function(err, result) {
+      if (callback) {
+        callback(err, result ? result.value : null);
+      }
+    });
+  }
+
   joinGroup(group_id, member_id, callback) {
     logger.debug("(ChatDB) joining group...", group_id, member_id)
     const member_field = "members." + member_id
@@ -115,14 +159,10 @@ class ChatDB {
       }
     }
     set_command['$set'][member_field] = 1
-    this.db.collection(this.groups_collection).updateOne( { uid: group_id }, set_command, { upsert: true }, function(err, doc) {
+    // Calls back with the group after the join: members changed meanwhile by other calls are included
+    this.db.collection(this.groups_collection).findOneAndUpdate( { uid: group_id }, set_command, { upsert: true, returnDocument: 'after' }, function(err, result) {
       if (callback) {
-        callback(err)
-      }
-      else {
-        if (callback) {
-          callback(null)
-        }
+        callback(err, result ? result.value : null)
       }
     });
   }

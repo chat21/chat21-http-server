@@ -4,6 +4,14 @@
 available on:
  ▶️ https://www.npmjs.com/package/@chat21/chat21-http-server
 
+## 0.2.42
+- bug-fixed: setGroupMembers replaces the members atomically and computes added/removed members on the group returned by the update, instead of a group read earlier
+- bug-fixed: updateGroupData, updateGroupAttributes and leaveGroup saved the whole group read earlier, restoring the members changed meanwhile by a concurrent setGroupMembers. Now they update only their own fields
+- bug-fixed: the group cache is reset after the group is saved instead of before, so a concurrent read can't cache the old group
+- bug-fixed: err.message() and undefined variables in error paths
+- bug-fixed: GET group cached the group read from the DB unconditionally, possibly over a newer group cached meanwhile. Now it is written only if the cached group is not newer (updatedOn, TdCache.setIfNotOlder), as in chat21-server
+- changed: the group notified to the observer (groups.update) has the same updatedOn written in Mongo, used by chat21-server as group version for its cache. joinGroup notifies the group returned by the update, with the members changed meanwhile
+
 ## 0.2.41
 - bug-fixed: fn setGroupMembers not update members correctly
 

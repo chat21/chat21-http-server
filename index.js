@@ -882,7 +882,7 @@ app.get(BASEURL + '/:appid/groups/:group_id', async (req, res) => {
     if (err) {
       const reply = {
           success: false,
-          err: err.message()
+          err: err.message
       }
       res.status(404).send(reply)
     }
@@ -937,9 +937,9 @@ app.post(BASEURL + '/:appid/groups/:group_id/members', async (req, res) => {
   logger.log('(Chat21-http) joined_member_id:', joined_member_id);
   logger.log('(Chat21-http) join group_id:', group_id);
   // logger.debug('chatapi', chatapi);
-  await resetGroupCache(group_id);
   logger.log("(Chat21-http) Got group to join to", group_id);
   chatapi.addMemberToGroupAndNotifyUpdate(req.user, joined_member_id, group_id, async (err, group) => {
+    await resetGroupCache(group_id);
     logger.debug("(Chat21-http) THE GROUP:", group)
     if (err) {
       logger.error("(Chat21-http) An error occurred while a member was joining the group", err)
@@ -1012,8 +1012,8 @@ app.put(BASEURL + '/:app_id/groups/:group_id/members', async (req, res) => {
   // logger.debug("new_members:", new_members)
   const group_id = req.params.group_id
   const user = req.user
-  await resetGroupCache(group_id);
-  chatapi.setGroupMembers(user, new_members, group_id, function(err) {
+  chatapi.setGroupMembers(user, new_members, group_id, async function(err) {
+    await resetGroupCache(group_id);
     if (err) {
       res.status(405).send(err)
     }
@@ -1047,8 +1047,8 @@ app.delete(BASEURL + '/:app_id/groups/:group_id/members/:member_id', async (req,
   logger.debug('(Chat21-http) group_id:' + group_id);
   logger.debug('(Chat21-http) app_id:' + app_id);
   logger.debug('(Chat21-http) user:' + user.uid);
-  await resetGroupCache(group_id);
-  chatapi.leaveGroup(user, member_id, group_id, app_id, function(err) {
+  chatapi.leaveGroup(user, member_id, group_id, app_id, async function(err) {
+    await resetGroupCache(group_id);
     if (err) {
       res.status(405).send(err)
     }
@@ -1076,8 +1076,8 @@ app.put(BASEURL + '/:app_id/groups/:group_id', async (req, res) => {
   const group_name = req.body.group_name;
   const group_id = req.params.group_id
   const user = req.user
-  await resetGroupCache(group_id);
-  chatapi.updateGroupData(user, group_name, group_id, function(err) {
+  chatapi.updateGroupData(user, group_name, group_id, async function(err) {
+    await resetGroupCache(group_id);
     if (err) {
       res.status(405).send(err)
     }
@@ -1105,8 +1105,8 @@ app.put(BASEURL + '/:app_id/groups/:group_id/attributes', async (req, res) => {
   const attributes = req.body.attributes;
   const group_id = req.params.group_id;
   const user = req.user;
-  await resetGroupCache(group_id);
-  chatapi.updateGroupAttributes(user, attributes, group_id, function(err) {
+  chatapi.updateGroupAttributes(user, attributes, group_id, async function(err) {
+    await resetGroupCache(group_id);
     if (err) {
       res.status(405).send(err)
     }
@@ -1343,11 +1343,19 @@ function decodejwt(req) {
 async function saveGroupInCache(group, group_id) {
   if (tdcache) {
     const group_key = "chat21:messages:groups:" + group_id;
-    await tdcache.set(
-      group_key,
-      JSON.stringify(group),
-      {EX: 86400} // 1 day
-    );
+    // The group read from the DB can be older than the one cached meanwhile by chat21-server after an update
+    const version = Number(group.updatedOn) || 0;
+    try {
+      await tdcache.setIfNotOlder(
+        group_key,
+        JSON.stringify(group),
+        version,
+        {EX: 86400} // 1 day
+      );
+    }
+    catch (error) {
+      logger.error("(Chat21-http) An error occurred saving the group in cache:", group_id, error);
+    }
   }
 }
 
@@ -1366,7 +1374,7 @@ async function groupFromCache(group_id) {
       return null
     }
     catch(err) {
-      logger.error("(Chat21-http) Error getting from cache by group key", error);
+      logger.error("(Chat21-http) Error getting from cache by group key", err);
     }
     return group;
   }
@@ -1384,7 +1392,7 @@ async function resetGroupCache(group_id) {
       logger.debug("(Chat21-http) removed group from cache:", group_key);
     }
     catch (error) {
-      console.error("(Chat21-http) An error occurred getting redis:", contact_key);
+      console.error("(Chat21-http) An error occurred removing the group from redis:", group_id, error);
     }
   }
 }
