@@ -1,5 +1,25 @@
 const redis = require('redis');
 
+// KEYS[1] key, ARGV[1] value, ARGV[2] updatedOn of the value, ARGV[3] optional expiry in seconds
+const SET_IF_NOT_OLDER_SCRIPT = `
+local current = redis.call('GET', KEYS[1])
+if current then
+  local ok, cached = pcall(cjson.decode, current)
+  if ok and type(cached) == 'table' then
+    local cached_version = tonumber(cached['updatedOn'])
+    if cached_version and cached_version > tonumber(ARGV[2]) then
+      return 0
+    end
+  end
+end
+if ARGV[3] then
+  redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[3])
+else
+  redis.call('SET', KEYS[1], ARGV[1])
+end
+return 1
+`;
+
 class TdCache {
 
     constructor(config) {
@@ -45,6 +65,20 @@ class TdCache {
         key,
         value,
         options);
+    }
+
+    // Atomically sets a JSON value unless the cached one has a greater updatedOn.
+    // Returns true if the value was written, false if a newer value was already cached.
+    async setIfNotOlder(key, value, updatedOn, options) {
+      if (!options) {
+        options = {EX: 86400}
+      }
+      const args = [value, String(updatedOn)];
+      if (options.EX) {
+        args.push(String(options.EX));
+      }
+      const written = await this.client.eval(SET_IF_NOT_OLDER_SCRIPT, { keys: [key], arguments: args });
+      return written === 1;
     }
 
     async hset(dict_key, key, value, options) {
